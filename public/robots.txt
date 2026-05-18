@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+Disallow: /api/
+Disallow: /admin/
+
+Sitemap: https://om-tools.netlify.app/sitemap.xml

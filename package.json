@@ -1,0 +1,23 @@
+{
+  "name": "om-tools",
+  "version": "1.0.0",
+  "description": "OM Tools — Premium Media Downloader & Utility Platform",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "firebase": "^12.12.1",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-helmet-async": "^3.0.0",
+    "react-router-dom": "^7.14.2",
+    "vite": "^5.4.21"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

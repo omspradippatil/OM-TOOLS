@@ -1,0 +1,96 @@
+/* ── Offline Tool Pages ── */
+.offline-hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 120px 0 80px;
+}
+
+.offline-hero__bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 80% at 50% -20%, rgba(108,99,255,0.12) 0%, transparent 70%),
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 100% 100%, 60px 60px, 60px 60px;
+  pointer-events: none;
+}
+
+.offline-hero__content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-md);
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.offline-hero__icon {
+  font-size: 4rem;
+  line-height: 1;
+  animation: float 4s ease-in-out infinite;
+}
+
+.offline-hero__badge {
+  margin: 0;
+}
+
+.offline-hero__title {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.offline-hero__subtitle {
+  font-size: 1.0625rem;
+  color: var(--text-muted);
+  max-width: 480px;
+  line-height: 1.65;
+}
+
+.offline-coming-soon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  padding: var(--space-2xl);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  max-width: 480px;
+  width: 100%;
+  animation: fadeUp 0.4s ease;
+}
+
+.offline-cs__icon {
+  font-size: 2.5rem;
+}
+
+.offline-cs__title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.offline-cs__desc {
+  font-size: 0.9375rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+.offline-cs__link {
+  color: var(--primary-light);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--transition-fast);
+}
+
+.offline-cs__link:hover { color: var(--primary); }

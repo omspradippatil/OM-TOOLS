@@ -1,0 +1,207 @@
+/* ── Footer ── */
+.footer {
+  position: relative;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  padding: var(--space-4xl) 0 var(--space-xl);
+  overflow: hidden;
+}
+
+.footer__glow {
+  position: absolute;
+  bottom: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 300px;
+  background: radial-gradient(ellipse, rgba(108,99,255,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.footer__top {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: var(--space-2xl);
+  margin-bottom: var(--space-2xl);
+}
+
+/* Brand */
+.footer__brand {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.footer__logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.footer__logo-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--grad-primary);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.footer__logo-text {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.footer__logo-text span {
+  color: var(--primary-light);
+}
+
+.footer__tagline {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.footer__socials {
+  display: flex;
+  gap: 0.625rem;
+}
+
+.footer__social-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+}
+
+.footer__social-btn svg { width: 16px; height: 16px; }
+
+.footer__social-btn:hover {
+  background: rgba(108,99,255,0.1);
+  border-color: rgba(108,99,255,0.3);
+  color: var(--primary-light);
+  transform: translateY(-2px);
+}
+
+/* Columns */
+.footer__col-heading {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+  margin-bottom: var(--space-md);
+}
+
+.footer__col-links {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.footer__link {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+.footer__link:hover { color: var(--primary-light); }
+
+/* Bottom */
+.footer__bottom {
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.footer__copy {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.footer__disclaimer {
+  font-size: 0.75rem;
+  color: var(--text-subtle);
+}
+
+/* ── OM PDF card ── */
+.footer__om-pdf-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: var(--space-md);
+  background: linear-gradient(135deg, rgba(108,99,255,0.1) 0%, rgba(255,107,157,0.06) 100%);
+  border: 1px solid rgba(108,99,255,0.2);
+  border-radius: var(--radius-lg);
+  text-decoration: none;
+  transition: all var(--transition-md);
+  margin-top: var(--space-xs);
+}
+
+.footer__om-pdf-card:hover {
+  border-color: rgba(108,99,255,0.4);
+  box-shadow: 0 4px 20px rgba(108,99,255,0.15);
+  transform: translateY(-2px);
+}
+
+.footer__om-pdf-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.footer__om-pdf-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.footer__om-pdf-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--primary-light);
+}
+
+.footer__om-pdf-desc {
+  font-size: 0.75rem;
+  color: var(--text-subtle);
+  line-height: 1.5;
+}
+
+.footer__om-pdf-arrow {
+  font-size: 1rem;
+  color: var(--primary-light);
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: all var(--transition-fast);
+}
+
+.footer__om-pdf-card:hover .footer__om-pdf-arrow {
+  opacity: 1;
+  transform: translate(2px, -2px);
+}
+
+@media (max-width: 1024px) {
+  .footer__top { grid-template-columns: 1fr 1fr; gap: var(--space-xl); }
+  .footer__brand { grid-column: span 2; }
+}
+
+@media (max-width: 600px) {
+  .footer__top { grid-template-columns: 1fr; }
+  .footer__brand { grid-column: span 1; }
+}
