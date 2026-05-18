@@ -149,7 +149,7 @@ export async function convertWithFFmpeg(inputData, inputExt, outputExt, opts = {
     cmd = ['-i', inputName, '-i', 'audio.input', '-c:v', 'copy', '-c:a', 'aac', outputName];
   } else if (outputExt === 'mp3') {
     const bitrate = opts.bitrate || '320k';
-    cmd = ['-i', inputName, '-vn', '-acodec', 'libmp3lame', '-b:a', bitrate, outputName];
+    cmd = ['-i', inputName, '-vn', '-b:a', bitrate, outputName];
   } else if (outputExt === 'm4a') {
     cmd = ['-i', inputName, '-vn', '-acodec', 'aac', '-b:a', '256k', outputName];
   } else if (outputExt === 'mp4') {

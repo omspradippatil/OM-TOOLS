@@ -49,7 +49,20 @@ exports.handler = async (event) => {
 
         const findBestFormat = (formatList) => {
           if (formatList.length === 0) return null;
-          formatList.sort((a, b) => (b.height || 0) - (a.height || 0));
+          
+          const isH264 = (f) => f.vcodec && (f.vcodec.includes('h264') || f.vcodec.includes('avc1') || f.vcodec.includes('avc'));
+          
+          // Sort primary by height descending, secondary by H.264 codec priority, tertiary by bitrate descending
+          formatList.sort((a, b) => {
+            if ((b.height || 0) !== (a.height || 0)) {
+              return (b.height || 0) - (a.height || 0);
+            }
+            const aH = isH264(a) ? 1 : 0;
+            const bH = isH264(b) ? 1 : 0;
+            if (bH !== aH) return bH - aH;
+            return (b.tbr || b.bitrate || 0) - (a.tbr || a.bitrate || 0);
+          });
+          
           if (quality === 'max') return formatList[0];
           
           const exact = formatList.find(f => f.height === targetHeight);
@@ -62,15 +75,15 @@ exports.handler = async (event) => {
         const bestAv = findBestFormat(avFormats);
         const bestVideo = findBestFormat(videoFormats);
 
-        // If requested 1080p+ but merged format only has 720p, return split streams for browser merging
-        if (bestVideo && bestVideo.height >= targetHeight && (!bestAv || bestAv.height < targetHeight)) {
+        // For all HD resolutions (720p, 1080p+), always return separate high-bitrate video + separate audio streams to bypass low-bitrate merged fallbacks
+        if (bestVideo && bestVideo.height >= targetHeight && targetHeight >= 720) {
           const audioFormats = formats.filter(f => f.vcodec === 'none' && f.acodec !== 'none').sort((a, b) => (b.abr || 0) - (a.abr || 0));
           const bestAudio = audioFormats[0];
           if (bestAudio) {
             format = bestVideo;
             format.audioUrl = bestAudio.url; // Inject audioUrl for frontend merging
           } else {
-            format = bestAv || bestVideo;
+            format = bestAv || bestVideo || formats[0];
           }
         } else {
           format = bestAv || bestVideo || formats[0];

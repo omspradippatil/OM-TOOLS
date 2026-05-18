@@ -8,9 +8,6 @@ const TOOLS_MENU = [
   { label: 'YouTube Downloader',   to: '/youtube-video-downloader', icon: '▶', desc: 'MP4 up to 4K' },
   { label: 'YouTube to MP3',       to: '/youtube-mp3-converter',    icon: '🎵', desc: '320kbps audio' },
   { label: 'Shorts Downloader',    to: '/shorts-downloader',        icon: '⚡', desc: 'HD vertical video' },
-  { label: 'Instagram Downloader', to: '/instagram-downloader',     icon: '📸', desc: 'Posts & stories' },
-  { label: 'Reel Downloader',      to: '/instagram-reel-downloader',icon: '🎞', desc: 'No watermark' },
-  { label: 'Thumbnail Download',   to: '/thumbnail-downloader',     icon: '🖼', desc: 'All resolutions' },
 ];
 
 export default function Navbar() {

@@ -256,7 +256,8 @@ export default function ToolPage({
       if (fmtOpts.needsConvert || audioUrl) {
         setProcStage('process');
         setProcProgress(0);
-        const sourceExt = directUrl.split('.').pop()?.split('?')[0] || 'mp4';
+        // Force a safe generic extension to prevent ffmpeg virtual filesystem path errors
+        const sourceExt = 'mp4'; 
         finalData = await convertWithFFmpeg(rawData, sourceExt, fmtOpts.ext, {
           bitrate: fmtOpts.audioBitrate ? `${fmtOpts.audioBitrate}k` : '320k',
           audioData: audioData,
@@ -268,6 +269,20 @@ export default function ToolPage({
       saveToDevice(finalData, filename, mimeForExt(fmtOpts.ext));
       setProcStage('done');
       setProcProgress(1);
+
+      // Log success to Firestore for dynamic counter
+      try {
+        const { db } = await import('../firebase');
+        const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+        await addDoc(collection(db, 'downloads'), {
+          timestamp: serverTimestamp(),
+          platform: platform || 'youtube',
+          quality: fmtOpts.quality || 'unknown',
+          mode: fmtOpts.mode || 'video'
+        });
+      } catch (dbErr) {
+        console.error('Failed to log successful download:', dbErr);
+      }
 
     } catch (e) {
       if (e.name === 'AbortError') {
@@ -282,7 +297,7 @@ export default function ToolPage({
         const { db } = await import('../firebase');
         const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
         await addDoc(collection(db, 'downloadLogs'), {
-          error: e.message,
+          error: (e && e.message) ? e.message : (e ? e.toString() : 'Unknown error'),
           url: sourceUrl,
           timestamp: serverTimestamp(),
           stage: procStage || 'unknown'

@@ -46,51 +46,6 @@ export const TOOLS = [
     isNew: false,
     isPopular: true,
   },
-  {
-    id: 'instagram-downloader',
-    slug: '/instagram-downloader',
-    name: 'Instagram Downloader',
-    shortName: 'Instagram',
-    description: 'Download Instagram posts, reels, stories and IGTV videos instantly.',
-    icon: '📸',
-    emoji: '📸',
-    category: 'media',
-    platforms: ['instagram'],
-    formats: ['MP4', 'JPG'],
-    qualities: ['Original', 'High', 'Medium'],
-    isNew: false,
-    isPopular: true,
-  },
-  {
-    id: 'reel-downloader',
-    slug: '/instagram-reel-downloader',
-    name: 'Reel Downloader',
-    shortName: 'IG Reels',
-    description: 'Download Instagram Reels in HD quality without watermark.',
-    icon: '🎞',
-    emoji: '🎞',
-    category: 'media',
-    platforms: ['instagram'],
-    formats: ['MP4'],
-    qualities: ['HD', 'Original'],
-    isNew: false,
-    isPopular: true,
-  },
-  {
-    id: 'thumbnail-downloader',
-    slug: '/thumbnail-downloader',
-    name: 'Thumbnail Downloader',
-    shortName: 'Thumbnails',
-    description: 'Extract YouTube video thumbnails in all available resolutions.',
-    icon: '🖼',
-    emoji: '🖼',
-    category: 'media',
-    platforms: ['youtube'],
-    formats: ['JPG', 'WebP'],
-    qualities: ['MaxRes', 'HQ', 'MQ', 'SD'],
-    isNew: true,
-    isPopular: false,
-  },
 ];
 
 export const CATEGORIES = [
@@ -99,10 +54,6 @@ export const CATEGORIES = [
 
 export const SUPPORTED_PLATFORMS = [
   { id: 'youtube',   name: 'YouTube',    color: '#FF0000', emoji: '▶' },
-  { id: 'instagram', name: 'Instagram',  color: '#E1306C', emoji: '📸' },
-  { id: 'tiktok',    name: 'TikTok',     color: '#010101', emoji: '🎵' },
-  { id: 'twitter',   name: 'Twitter/X',  color: '#1DA1F2', emoji: '🐦' },
-  { id: 'facebook',  name: 'Facebook',   color: '#1877F2', emoji: '👍' },
 ];
 
 // Detect platform from URL

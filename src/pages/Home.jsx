@@ -125,14 +125,14 @@ function ToolCard({ tool }) {
 
 /* ── Stats data ── */
 const STATS = [
-  { label: 'Videos Downloaded', value: 2400000, suffix: '+', prefix: '' },
-  { label: 'Active Users',      value: 180000,  suffix: '+', prefix: '' },
-  { label: 'Tools Available',   value: 9,       suffix: '',  prefix: '' },
-  { label: 'Uptime',            value: 99,      suffix: '%', prefix: '' },
+  { label: 'Videos Downloaded', value: 0,  suffix: '',  prefix: '' },
+  { label: 'Tools Available',   value: 3,  suffix: '',  prefix: '' },
+  { label: 'Uptime',            value: 99, suffix: '%', prefix: '' },
 ];
 
-function StatCard({ stat }) {
-  const [count, ref] = useCounter(stat.value);
+function StatCard({ stat, dynamicValue }) {
+  const valueToUse = dynamicValue !== undefined ? dynamicValue : stat.value;
+  const [count, ref] = useCounter(valueToUse);
 
   return (
     <div className="stat-card" ref={ref}>
@@ -150,13 +150,28 @@ const FEATURES = [
   { icon: '📱', title: 'Mobile Optimized',    desc: 'Designed mobile-first. Smooth on any device or browser.' },
   { icon: '🔒', title: 'Secure & Private',    desc: 'No account needed. Files processed securely — never stored.' },
   { icon: '🎯', title: 'Multi-Format',        desc: 'MP4, WEBM, MP3, M4A — choose the format that suits you.' },
-  { icon: '🌐', title: 'All Platforms',       desc: 'YouTube, Instagram, TikTok, Twitter, Facebook supported.' },
+  { icon: '🌐', title: 'All Platforms',       desc: 'YouTube, TikTok, Twitter, Facebook supported.' },
   { icon: '♾️', title: 'Always Free',         desc: 'Every tool is free forever — no hidden charges, no watermarks.' },
 ];
 
 /* ── Home Page ── */
 export default function Home() {
   const seo = SEO_DATA.home;
+  const [dynamicDownloads, setDynamicDownloads] = useState(0);
+
+  useEffect(() => {
+    async function fetchDownloadsCount() {
+      try {
+        const { db } = await import('../firebase');
+        const { collection, getCountFromServer } = await import('firebase/firestore');
+        const snapshot = await getCountFromServer(collection(db, 'downloads'));
+        setDynamicDownloads(snapshot.data().count);
+      } catch (err) {
+        console.error('Failed to fetch downloads count:', err);
+      }
+    }
+    fetchDownloadsCount();
+  }, []);
 
   // FAQ schema for structured data
   const faqSchema = {
@@ -227,7 +242,13 @@ export default function Home() {
         <section className="stats-section section-sm" aria-label="Platform statistics">
           <div className="container">
             <div className="stats-grid">
-              {STATS.map((s) => <StatCard key={s.label} stat={s} />)}
+              {STATS.map((s) => (
+                <StatCard 
+                  key={s.label} 
+                  stat={s} 
+                  dynamicValue={s.label === 'Videos Downloaded' ? dynamicDownloads : undefined} 
+                />
+              ))}
             </div>
           </div>
         </section>

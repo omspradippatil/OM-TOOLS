@@ -58,6 +58,19 @@ service cloud.firestore {
       }
     }
 
+    // ── Global downloads collection ─────────────────────────────────────
+    match /downloads/{downloadId} {
+      allow read: if true;  // Anyone can read counts for Home page stats
+      allow create: if true; // Unsigned users can log successful downloads
+      allow update, delete: if false;
+    }
+
+    // ── Global download logs (failures) ──────────────────────────────────
+    match /downloadLogs/{logId} {
+      allow create: if true; // Unsigned users can submit crash reports
+      allow read, update, delete: if false;
+    }
+
     // ── Block all other collections ─────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
