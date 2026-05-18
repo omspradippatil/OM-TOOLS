@@ -43,19 +43,27 @@ exports.handler = async (event) => {
         format = avFormats[0] || formats.filter(f => f.acodec !== 'none')[0] || formats[0];
       } else {
         const targetHeight = quality === 'max' ? 9999 : parseInt(quality, 10);
-        
         const avFormats = formats.filter(f => f.vcodec !== 'none' && f.acodec !== 'none');
         const videoFormats = formats.filter(f => f.vcodec !== 'none');
 
+        const getSizeClass = (f) => Math.max(f.width || 0, f.height || 0);
+
+        // Normalize target size class by maximum dimension (1920 for 1080p class, 1280 for 720p class, etc.)
+        const targetSize = targetHeight >= 1080 ? 1920 :
+                           targetHeight >= 720  ? 1280 :
+                           targetHeight >= 480  ? 854  : 640;
+        
         const findBestFormat = (formatList) => {
           if (formatList.length === 0) return null;
           
           const isH264 = (f) => f.vcodec && (f.vcodec.includes('h264') || f.vcodec.includes('avc1') || f.vcodec.includes('avc'));
           
-          // Sort primary by height descending, secondary by H.264 codec priority, tertiary by bitrate descending
+          // Sort primary by resolution size class descending, secondary by H.264 codec, tertiary by bitrate descending
           formatList.sort((a, b) => {
-            if ((b.height || 0) !== (a.height || 0)) {
-              return (b.height || 0) - (a.height || 0);
+            const sizeA = getSizeClass(a);
+            const sizeB = getSizeClass(b);
+            if (sizeB !== sizeA) {
+              return sizeB - sizeA;
             }
             const aH = isH264(a) ? 1 : 0;
             const bH = isH264(b) ? 1 : 0;
@@ -65,18 +73,20 @@ exports.handler = async (event) => {
           
           if (quality === 'max') return formatList[0];
           
-          const exact = formatList.find(f => f.height === targetHeight);
+          // Try to match the exact size class
+          const exact = formatList.find(f => getSizeClass(f) === targetSize);
           if (exact) return exact;
           
-          const closest = formatList.filter(f => f.height <= targetHeight);
+          // Fallback to the closest smaller size class
+          const closest = formatList.filter(f => getSizeClass(f) <= targetSize);
           return closest.length > 0 ? closest[0] : formatList[formatList.length - 1];
         };
 
         const bestAv = findBestFormat(avFormats);
         const bestVideo = findBestFormat(videoFormats);
 
-        // For all HD resolutions (720p, 1080p+), always return separate high-bitrate video + separate audio streams to bypass low-bitrate merged fallbacks
-        if (bestVideo && bestVideo.height >= targetHeight && targetHeight >= 720) {
+        // If requested 720p or higher class, always return separate high-bitrate video + separate audio streams
+        if (bestVideo && getSizeClass(bestVideo) >= targetSize && targetSize >= 1280) {
           const audioFormats = formats.filter(f => f.vcodec === 'none' && f.acodec !== 'none').sort((a, b) => (b.abr || 0) - (a.abr || 0));
           const bestAudio = audioFormats[0];
           if (bestAudio) {

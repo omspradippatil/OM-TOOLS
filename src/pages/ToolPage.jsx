@@ -217,6 +217,44 @@ export default function ToolPage({
       }
       setProcFilename(filename);
 
+      // REDESIGN: Check if we can perform a native background download to hit 100% Wi-Fi speed and consume 0MB RAM
+      const canDownloadNatively = !fmtOpts.needsConvert && !audioUrl;
+        console.log('canDownloadNatively', canDownloadNatively);
+      if (canDownloadNatively) {
+        let downloadUrl = directUrl;
+        if (!import.meta.env.PROD && directUrl.includes('googlevideo.com')) {
+          downloadUrl = `/api/stream?url=${encodeURIComponent(directUrl)}&download=1&filename=${encodeURIComponent(filename)}`;
+        }
+
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = downloadUrl;
+        document.body.appendChild(iframe);
+        setTimeout(() => {
+          if (iframe.parentNode) {
+            document.body.removeChild(iframe);
+          }
+        }, 15000);
+
+        setProcStage('done');
+        setProcProgress(1);
+
+        // Log success to Firestore for dynamic counter
+        try {
+          const { db } = await import('../firebase');
+          const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+          await addDoc(collection(db, 'downloads'), {
+            timestamp: serverTimestamp(),
+            platform: platform || 'youtube',
+            quality: fmtOpts.quality || 'unknown',
+            mode: fmtOpts.mode || 'video'
+          });
+        } catch (dbErr) {
+          console.error('Failed to log successful download:', dbErr);
+        }
+        return;
+      }
+
       /* ── Stage 2: Download raw bytes to browser ── */
       setProcStage('download');
       setProcProgress(0);

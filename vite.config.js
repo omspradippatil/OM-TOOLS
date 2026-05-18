@@ -57,13 +57,15 @@ export default defineConfig({
 
         // Add a streaming proxy to bypass YouTube CORS during local development
         server.middlewares.use('/api/stream', (req, res) => {
-          const urlStr = new URL(req.url, `http://${req.headers.host}`).searchParams.get('url');
+          const urlObj = new URL(req.url, `http://${req.headers.host}`);
+          const urlStr = urlObj.searchParams.get('url');
           if (!urlStr) return res.end();
           
           import('module').then(({ createRequire }) => {
             const reqLib = createRequire(import.meta.url);
             const https = reqLib('https');
             const targetUrl = new URL(urlStr);
+            const rangeParam = urlObj.searchParams.get('range');
             
             const options = {
               hostname: targetUrl.hostname,
@@ -75,18 +77,28 @@ export default defineConfig({
               }
             };
 
-            // Forward Range header for partial content/progress
-            if (req.headers.range) {
-              options.headers['Range'] = req.headers.range;
+            // Forward Range header from query parameter or request headers
+            const targetRange = rangeParam || req.headers.range;
+            if (targetRange) {
+              options.headers['Range'] = targetRange;
             }
 
             const proxyReq = https.request(options, (proxyRes) => {
-              res.writeHead(proxyRes.statusCode, {
+              const headers = {
                 ...proxyRes.headers,
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Headers': 'Range',
                 'Access-Control-Expose-Headers': 'Content-Length, Content-Range'
-              });
+              };
+
+              const downloadParam = urlObj.searchParams.get('download');
+              const filenameParam = urlObj.searchParams.get('filename') || 'download.mp4';
+              if (downloadParam === '1') {
+                headers['Content-Disposition'] = `attachment; filename="${encodeURIComponent(filenameParam)}"`;
+                headers['Content-Type'] = 'application/octet-stream';
+              }
+
+              res.writeHead(proxyRes.statusCode, headers);
               proxyRes.pipe(res);
             });
 

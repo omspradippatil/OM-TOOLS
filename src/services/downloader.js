@@ -51,10 +51,10 @@ export async function fetchCobaltLink(url, options = {}) {
 
 
 /**
- * Step 2: Download the raw media to a Uint8Array with progress tracking.
- * @param {string}   url        - Direct media URL from Cobalt
- * @param {Function} onProgress - (0–1) progress callback
- * @param {AbortSignal} signal  - For cancellation
+ * Step 2: Download the raw media to a Uint8Array.
+ * Uses 4x parallel chunk downloading if supported by the proxy/server,
+ * multiplying download speeds by up to 4x and bypassing connection throttling.
+ * Falls back dynamically to robust sequential downloading if Range headers are not supported.
  */
 export async function downloadToBuffer(url, onProgress, signal) {
   let fetchUrl = url;
@@ -64,8 +64,110 @@ export async function downloadToBuffer(url, onProgress, signal) {
     fetchUrl = `/api/stream?url=${encodeURIComponent(url)}`;
   }
 
-  const res = await fetch(fetchUrl, { signal });
+  try {
+    // 1. Try to fetch content length using a lightweight Range check
+    const sizeRes = await fetch(fetchUrl, {
+      headers: { 'Range': 'bytes=0-0' },
+      signal
+    });
 
+    if (!sizeRes.ok) {
+      throw new Error(`Range check returned status: ${sizeRes.status}`);
+    }
+
+    const contentRange = sizeRes.headers.get('Content-Range');
+    let totalSize = 0;
+    if (contentRange) {
+      const parts = contentRange.split('/');
+      if (parts.length > 1) {
+        totalSize = parseInt(parts[1], 10);
+      }
+    }
+
+    // If total size is valid and larger than 3MB, use parallel 4-thread download
+    if (totalSize > 3 * 1024 * 1024) {
+      const concurrency = 4;
+      const chunkSize = Math.ceil(totalSize / concurrency);
+      const promises = [];
+      const progressTracker = Array(concurrency).fill(0);
+      
+      let lastTime = Date.now();
+      let lastBytes = 0;
+      let totalReceived = 0;
+
+      const updateProgress = (index, bytesReceived) => {
+        progressTracker[index] = bytesReceived;
+        totalReceived = progressTracker.reduce((sum, val) => sum + val, 0);
+        
+        const now = Date.now();
+        if (now - lastTime >= 500) {
+          const bytesPerSec = ((totalReceived - lastBytes) / (now - lastTime)) * 1000;
+          const mbPerSec = (bytesPerSec / (1024 * 1024)).toFixed(1);
+          lastTime = now;
+          lastBytes = totalReceived;
+          
+          if (onProgress) {
+            onProgress({ progress: totalReceived / totalSize, speed: mbPerSec });
+          }
+        }
+      };
+
+      const downloadChunk = async (index) => {
+        const start = index * chunkSize;
+        const end = Math.min(start + chunkSize - 1, totalSize - 1);
+        
+        const chunkRes = await fetch(fetchUrl, {
+          headers: { 'Range': `bytes=${start}-${end}` },
+          signal
+        });
+        
+        if (!chunkRes.ok) throw new Error(`Chunk ${index} failed: ${chunkRes.status}`);
+        
+        const reader = chunkRes.body.getReader();
+        const chunks = [];
+        let received = 0;
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length;
+          updateProgress(index, received);
+        }
+        
+        const chunkData = new Uint8Array(received);
+        let offset = 0;
+        for (const chunk of chunks) {
+          chunkData.set(chunk, offset);
+          offset += chunk.length;
+        }
+        return chunkData;
+      };
+
+      // Start parallel downloads
+      for (let i = 0; i < concurrency; i++) {
+        promises.push(downloadChunk(i));
+      }
+
+      const results = await Promise.all(promises);
+      
+      // Concatenate all concurrent chunks
+      const finalData = new Uint8Array(totalSize);
+      let offset = 0;
+      for (const resData of results) {
+        finalData.set(resData, offset);
+        offset += resData.length;
+      }
+
+      if (onProgress) onProgress({ progress: 1, speed: 0 });
+      return finalData;
+    }
+  } catch (err) {
+    console.warn('Parallel download failed or not supported, falling back to sequential stream:', err);
+  }
+
+  // 2. Sequential fallback (standard single-thread stream)
+  const res = await fetch(getFetchUrl(), { signal });
   if (!res.ok) throw new Error(`Download failed: ${res.status}`);
 
   const contentLength = res.headers.get('Content-Length');
@@ -97,7 +199,6 @@ export async function downloadToBuffer(url, onProgress, signal) {
 
   if (!total && onProgress) onProgress({ progress: 1, speed: 0 });
 
-  // Merge chunks into single Uint8Array
   const merged = new Uint8Array(received);
   let offset = 0;
   for (const chunk of chunks) {
