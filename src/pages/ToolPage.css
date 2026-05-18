@@ -69,6 +69,18 @@
   margin-top: var(--space-sm);
 }
 
+.tool-hero__analyzing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  margin-top: var(--space-md);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  animation: fadeIn 200ms ease;
+}
+
 .tool-url-form {
   display: flex;
   flex-direction: column;
@@ -168,6 +180,19 @@
 .dl-card__channel {
   font-size: 0.875rem;
   color: var(--text-muted);
+}
+
+.dl-card__privacy-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-subtle);
+  background: rgba(16,185,129,0.05);
+  border: 1px solid rgba(16,185,129,0.1);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.875rem;
+  margin-top: var(--space-sm);
 }
 
 .dl-card__formats {

@@ -1,0 +1,66 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function validString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    // ── Users collection ────────────────────────────────────────────────
+    // Each user can only access their OWN document
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly([
+            'uid', 'email', 'displayName', 'photoURL',
+            'provider', 'createdAt', 'lastLoginAt'
+           ])
+        && request.resource.data.uid == request.auth.uid
+        && validString(request.resource.data.email, 200)
+        && validString(request.resource.data.displayName, 100);
+
+      allow update: if isOwner(uid)
+        // Prevent changing uid
+        && request.resource.data.uid == resource.data.uid
+        // Only allow safe fields to be updated
+        && request.resource.data.diff(resource.data)
+              .affectedKeys()
+              .hasOnly(['displayName', 'photoURL', 'lastLoginAt']);
+
+      // Never allow deletion via client
+      allow delete: if false;
+
+      // ── Downloads sub-collection (per-user history) ──────────────────
+      match /downloads/{downloadId} {
+        allow read:   if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.keys().hasOnly([
+              'url', 'platform', 'format', 'filename',
+              'sizeBytes', 'createdAt'
+             ])
+          && validString(request.resource.data.url, 2000)
+          && validString(request.resource.data.platform, 50)
+          && validString(request.resource.data.format, 20)
+          && validString(request.resource.data.filename, 300);
+        allow update: if false;  // Immutable history
+        allow delete: if isOwner(uid);
+      }
+    }
+
+    // ── Block all other collections ─────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

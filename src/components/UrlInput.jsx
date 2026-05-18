@@ -19,12 +19,25 @@ const PLATFORM_ROUTES = {
   facebook: { video: '/youtube-video-downloader' },
 };
 
-export default function UrlInput({ placeholder = 'Paste YouTube or Instagram URL here...', autoNavigate = false }) {
-  const [url, setUrl]         = useState('');
-  const [error, setError]     = useState('');
+export default function UrlInput({
+  placeholder = 'Paste YouTube or Instagram URL here...',
+  autoNavigate = false,
+  value: controlledValue,
+  onValueChange,
+  onFetch,
+}) {
+  // Support controlled mode (ToolPage passes value + onValueChange)
+  const isControlled = controlledValue !== undefined;
+  const [internalUrl, setInternalUrl] = useState('');
+  const url = isControlled ? controlledValue : internalUrl;
+  const setUrl = (val) => {
+    if (!isControlled) setInternalUrl(val);
+    onValueChange?.(val);
+  };
+  const [error, setError]       = useState('');
   const [detected, setDetected] = useState(null);
-  const inputRef              = useRef(null);
-  const navigate              = useNavigate();
+  const inputRef                = useRef(null);
+  const navigate                = useNavigate();
 
   const handleChange = (e) => {
     const val = e.target.value;
@@ -67,9 +80,10 @@ export default function UrlInput({ placeholder = 'Paste YouTube or Instagram URL
 
     if (autoNavigate) {
       const route = PLATFORM_ROUTES[detected.platform]?.[detected.type];
-      if (route) {
-        navigate(`${route}?url=${encodeURIComponent(trimmed)}`);
-      }
+      if (route) navigate(`${route}?url=${encodeURIComponent(trimmed)}`);
+    } else if (onFetch) {
+      // Tool page mode — delegate to parent
+      onFetch(trimmed);
     }
   };
 

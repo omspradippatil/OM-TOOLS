@@ -1,50 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import SEO from '../components/SEO.jsx';
 import UrlInput from '../components/UrlInput.jsx';
-import { detectPlatform } from '../constants/tools.js';
+import ProcessingOverlay from '../components/ProcessingOverlay.jsx';
+import { detectPlatform, isValidUrl } from '../constants/tools.js';
+import {
+  fetchCobaltLink,
+  downloadToBuffer,
+  convertWithFFmpeg,
+  saveToDevice,
+  mimeForExt,
+  formatToOptions,
+} from '../services/downloader.js';
 import './ToolPage.css';
-
-/* ── Download result card ── */
-function DownloadCard({ result, onDownload }) {
-  return (
-    <div className="dl-card animate-fade-up">
-      {result.thumbnail && (
-        <div className="dl-card__thumb-wrap">
-          <img
-            src={result.thumbnail}
-            alt={result.title}
-            className="dl-card__thumb"
-            loading="lazy"
-          />
-          {result.duration && (
-            <span className="dl-card__duration">{result.duration}</span>
-          )}
-        </div>
-      )}
-      <div className="dl-card__info">
-        <h3 className="dl-card__title">{result.title}</h3>
-        {result.channel && (
-          <p className="dl-card__channel">📺 {result.channel}</p>
-        )}
-        <div className="dl-card__formats">
-          {result.formats.map((fmt) => (
-            <button
-              key={fmt.id}
-              className="dl-format-btn"
-              onClick={() => onDownload(fmt)}
-              aria-label={`Download ${fmt.label} ${fmt.quality}`}
-            >
-              <span className="dl-format-btn__label">{fmt.label}</span>
-              <span className="dl-format-btn__quality">{fmt.quality}</span>
-              {fmt.size && <span className="dl-format-btn__size">{fmt.size}</span>}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ── Skeleton loader ── */
 function SkeletonCard() {
@@ -55,16 +23,52 @@ function SkeletonCard() {
         <div className="skeleton" style={{ height: 20, width: '80%', marginBottom: 8, borderRadius: 6 }} />
         <div className="skeleton" style={{ height: 14, width: '50%', marginBottom: 16, borderRadius: 6 }} />
         <div className="dl-skeleton__formats">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="skeleton" style={{ height: 60, borderRadius: 10 }} />
-          ))}
+          {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height: 64, borderRadius: 10 }} />)}
         </div>
       </div>
     </div>
   );
 }
 
-/* ── FAQ for tool pages ── */
+/* ── Download card ── */
+function DownloadCard({ result, onDownload, busy }) {
+  return (
+    <div className="dl-card animate-fade-up">
+      {result.thumbnail && (
+        <div className="dl-card__thumb-wrap">
+          <img src={result.thumbnail} alt={result.title} className="dl-card__thumb" loading="lazy"
+            onError={(e) => { e.target.style.display='none'; }} />
+          {result.duration && <span className="dl-card__duration">{result.duration}</span>}
+        </div>
+      )}
+      <div className="dl-card__info">
+        <h3 className="dl-card__title">{result.title}</h3>
+        {result.channel && <p className="dl-card__channel">📺 {result.channel}</p>}
+        <div className="dl-card__formats">
+          {result.formats.map((fmt) => (
+            <button
+              key={fmt.id}
+              className="dl-format-btn"
+              onClick={() => onDownload(fmt)}
+              disabled={busy}
+              aria-label={`Download ${fmt.label} ${fmt.quality}`}
+            >
+              <span className="dl-format-btn__label">{fmt.label}</span>
+              <span className="dl-format-btn__quality">{fmt.quality}</span>
+              {fmt.size && <span className="dl-format-btn__size">{fmt.size}</span>}
+            </button>
+          ))}
+        </div>
+        <div className="dl-card__privacy-note">
+          <span aria-hidden="true">🔒</span>
+          Downloads happen directly on your device — no data passes through our servers
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── FAQ ── */
 function ToolFAQ({ faqs }) {
   const [open, setOpen] = useState(null);
   if (!faqs?.length) return null;
@@ -75,11 +79,7 @@ function ToolFAQ({ faqs }) {
         <div className="tool-faq__list">
           {faqs.map((faq, i) => (
             <div key={i} className={`faq-item${open === i ? ' faq-item--open' : ''}`}>
-              <button
-                className="faq-item__trigger"
-                onClick={() => setOpen(open === i ? null : i)}
-                aria-expanded={open === i}
-              >
+              <button className="faq-item__trigger" onClick={() => setOpen(open === i ? null : i)} aria-expanded={open === i}>
                 <span className="faq-item__q">{faq.q}</span>
                 <span className="faq-item__chevron">{open === i ? '−' : '+'}</span>
               </button>
@@ -96,105 +96,170 @@ function ToolFAQ({ faqs }) {
   );
 }
 
-/* ── Generic Tool Page (used for media downloaders) ── */
+/* ═══════════════════════════════════════════════
+   Main ToolPage Component
+═══════════════════════════════════════════════ */
 export default function ToolPage({
-  seo,
-  title,
-  subtitle,
-  icon,
-  platform,
-  supportedTypes,
-  formats,
-  faqs,
-  features,
-  inputPlaceholder,
+  seo, title, subtitle, icon, platform,
+  supportedTypes, formats, faqs, features, inputPlaceholder,
 }) {
   const [searchParams] = useSearchParams();
-  const [url, setUrl]         = useState(searchParams.get('url') || '');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult]   = useState(null);
-  const [error, setError]     = useState('');
-  const [downloaded, setDownloaded] = useState(false);
+  const [urlVal, setUrlVal]       = useState(searchParams.get('url') || '');
+  const [loading, setLoading]     = useState(false);
+  const [result, setResult]       = useState(null);
+  const [fetchError, setFetchError] = useState('');
 
-  // Auto-fetch if URL came from query string
+  // Processing overlay state
+  const [procStage, setProcStage]       = useState(null); // null = hidden
+  const [procProgress, setProcProgress] = useState(0);
+  const [procFilename, setProcFilename] = useState('');
+  const [procError, setProcError]       = useState('');
+
+  const abortRef = useRef(null);
+
   useEffect(() => {
     const q = searchParams.get('url');
-    if (q) {
-      setUrl(q);
-      handleFetch(q);
-    }
+    if (q && isValidUrl(q)) handleFetch(q);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ── Simulate fetch (offline-safe demo) ──
-     In production, replace with your backend API call.
-     We build thumbnail URLs directly from YouTube's CDN
-     and provide a demo result card for demonstration.
-  */
+  /* ── Step 1: Fetch media info via Cobalt ── */
   async function handleFetch(targetUrl) {
-    setError('');
+    const url = (targetUrl || urlVal).trim();
+    if (!url) { setFetchError('Please paste a URL first.'); return; }
+    if (!isValidUrl(url)) { setFetchError('That doesn\'t look like a valid URL.'); return; }
+
+    const det = detectPlatform(url);
+    if (!det) { setFetchError('This platform is not supported yet.'); return; }
+    if (platform && det.platform !== platform) {
+      setFetchError(`This tool is for ${platform} URLs. Paste a ${platform}.com link.`);
+      return;
+    }
+
+    setFetchError('');
     setResult(null);
     setLoading(true);
 
-    const trimmed = (targetUrl || url).trim();
-    if (!trimmed) { setError('Please paste a URL first.'); setLoading(false); return; }
-
-    const det = detectPlatform(trimmed);
-    if (!det) { setError('This URL is not from a supported platform.'); setLoading(false); return; }
-
-    if (platform && det.platform !== platform) {
-      setError(`This tool is for ${platform} URLs. You pasted a ${det.platform} URL.`);
-      setLoading(false); return;
-    }
-
-    // Simulate network delay
-    await new Promise(r => setTimeout(r, 1600));
-
-    // Build demo result — for YouTube extract video ID and use CDN thumbnail
-    if (det.platform === 'youtube') {
+    try {
+      // For YouTube: extract video ID for thumbnail CDN
       let videoId = null;
-      try {
-        const u = new URL(trimmed);
-        videoId = u.searchParams.get('v') ||
-          (u.hostname === 'youtu.be' ? u.pathname.slice(1) : null) ||
-          (trimmed.includes('/shorts/') ? trimmed.split('/shorts/')[1].split('?')[0] : null);
-      } catch { /* ignore */ }
+      if (det.platform === 'youtube') {
+        try {
+          const u = new URL(url);
+          videoId = u.searchParams.get('v') ||
+            (u.hostname === 'youtu.be' ? u.pathname.slice(1) : null) ||
+            (url.includes('/shorts/') ? url.split('/shorts/')[1]?.split('?')[0] : null);
+        } catch { /* ignore */ }
+      }
+
+      // Build result card
+      const isAudio = title.toLowerCase().includes('mp3') || title.toLowerCase().includes('audio');
+      const isThumbnail = title.toLowerCase().includes('thumbnail');
+
+      const resultFormats = formats || buildDefaultFormats(det.platform, det.type, isAudio, isThumbnail);
 
       setResult({
-        title: 'YouTube Video (Demo Preview)',
-        channel: 'Demo Channel',
-        duration: '3:45',
-        thumbnail: videoId
-          ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
-          : null,
-        formats: formats || [
-          { id: 'mp4-1080', label: 'MP4', quality: '1080p HD', size: '~85 MB' },
-          { id: 'mp4-720',  label: 'MP4', quality: '720p',     size: '~45 MB' },
-          { id: 'mp4-480',  label: 'MP4', quality: '480p',     size: '~25 MB' },
-          { id: 'mp3-320',  label: 'MP3', quality: '320 kbps', size: '~8 MB'  },
-        ],
+        title:     `${det.platform.charAt(0).toUpperCase() + det.platform.slice(1)} — ${det.type}`,
+        channel:   det.platform === 'youtube' ? 'YouTube Video' : `${det.platform} Media`,
+        duration:  null,
+        thumbnail: videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : null,
+        sourceUrl: url,
+        formats:   resultFormats,
       });
-    } else {
-      // Instagram / other demo
-      setResult({
-        title: 'Instagram Media (Demo Preview)',
-        channel: 'Instagram User',
-        duration: null,
-        thumbnail: null,
-        formats: formats || [
-          { id: 'mp4-hd', label: 'MP4', quality: 'HD Original', size: '~20 MB' },
-          { id: 'mp4-sd', label: 'MP4', quality: 'SD',          size: '~8 MB'  },
-        ],
-      });
+    } catch (e) {
+      setFetchError(e.message || 'Failed to analyze the URL. Please try again.');
     }
 
     setLoading(false);
   }
 
-  function handleDownloadFormat(fmt) {
-    setDownloaded(true);
-    // In production: trigger actual download via signed URL or redirect
-    alert(`⚡ Preparing your ${fmt.label} ${fmt.quality} download...\n\nNote: Connect a backend API (e.g. yt-dlp service) to enable real downloads.`);
+  /* ── Step 2+: Real on-device download ── */
+  async function handleDownload(fmt) {
+    const fmtOpts = formatToOptions(fmt.id);
+    const sourceUrl = result.sourceUrl;
+
+    abortRef.current = new AbortController();
+    const signal = abortRef.current.signal;
+
+    setProcError('');
+    setProcProgress(0);
+    setProcFilename('');
+    setProcStage('fetch');
+
+    try {
+      /* ── Stage 1: Get Cobalt signed URL ── */
+      let directUrl, filename;
+      try {
+        const cobalt = await fetchCobaltLink(sourceUrl, {
+          mode:         fmtOpts.mode,
+          quality:      fmtOpts.quality,
+          audioFormat:  fmtOpts.audioFormat,
+          audioBitrate: fmtOpts.audioBitrate,
+          signal,
+        });
+        directUrl = cobalt.url;
+        filename  = cobalt.filename || `om-tools-download.${fmtOpts.ext}`;
+      } catch (cobaltErr) {
+        // Cobalt failed — inform user clearly
+        throw new Error(
+          `Could not fetch the download link. ${cobaltErr.message || ''}\n\n` +
+          'This can happen if the video is age-restricted, private, or the URL format changed. ' +
+          'Try a different video or check the URL.'
+        );
+      }
+
+      // Ensure correct extension in filename
+      if (!filename.endsWith(`.${fmtOpts.ext}`)) {
+        filename = filename.split('.').slice(0, -1).join('.') + `.${fmtOpts.ext}` || `download.${fmtOpts.ext}`;
+      }
+      setProcFilename(filename);
+
+      /* ── Stage 2: Download raw bytes to browser ── */
+      setProcStage('download');
+      setProcProgress(0);
+
+      const rawData = await downloadToBuffer(
+        directUrl,
+        (p) => setProcProgress(p),
+        signal
+      );
+
+      /* ── Stage 3: Convert if needed (ffmpeg.wasm) ── */
+      let finalData = rawData;
+      if (fmtOpts.needsConvert) {
+        setProcStage('process');
+        setProcProgress(0);
+        const sourceExt = directUrl.split('.').pop()?.split('?')[0] || 'mp4';
+        finalData = await convertWithFFmpeg(rawData, sourceExt, fmtOpts.ext, {
+          bitrate: fmtOpts.audioBitrate ? `${fmtOpts.audioBitrate}k` : '320k',
+          onProgress: (p) => setProcProgress(p),
+        });
+      }
+
+      /* ── Stage 4: Save to device ── */
+      saveToDevice(finalData, filename, mimeForExt(fmtOpts.ext));
+      setProcStage('done');
+      setProcProgress(1);
+
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        setProcStage(null); // cancelled by user
+        return;
+      }
+      setProcError(e.message || 'Download failed. Please try again.');
+      setProcStage('error');
+    }
+  }
+
+  function handleCancel() {
+    abortRef.current?.abort();
+    setProcStage(null);
+  }
+
+  function handleCloseOverlay() {
+    setProcStage(null);
+    setProcError('');
+    setProcProgress(0);
   }
 
   const faqSchema = faqs ? {
@@ -217,6 +282,18 @@ export default function ToolPage({
         schema={faqSchema}
       />
 
+      {/* Processing overlay — portal-like, above everything */}
+      {procStage && (
+        <ProcessingOverlay
+          stage={procStage}
+          progress={procProgress}
+          filename={procFilename}
+          errorMsg={procError}
+          onCancel={handleCancel}
+          onClose={handleCloseOverlay}
+        />
+      )}
+
       <main id="main-content">
         {/* ── Tool Hero ── */}
         <section className="tool-hero">
@@ -225,39 +302,33 @@ export default function ToolPage({
             <div className="tool-hero__content">
               <div className="tool-hero__badge">
                 <span aria-hidden="true">{icon}</span>
-                {platform && <span className="tool-hero__platform">{platform.charAt(0).toUpperCase() + platform.slice(1)}</span>}
+                {platform && (
+                  <span className="tool-hero__platform">
+                    {platform.charAt(0).toUpperCase() + platform.slice(1)}
+                  </span>
+                )}
               </div>
               <h1 className="tool-hero__title">{title}</h1>
               <p className="tool-hero__subtitle">{subtitle}</p>
 
-              {/* URL Input */}
               <div className="tool-hero__input">
-                <div className="tool-url-form">
-                  <UrlInput
-                    placeholder={inputPlaceholder || 'Paste URL here...'}
-                    autoNavigate={false}
-                  />
-                  <button
-                    className="btn btn-primary btn-lg tool-hero__fetch-btn"
-                    onClick={() => handleFetch()}
-                    disabled={loading}
-                    aria-busy={loading}
-                  >
-                    {loading ? (
-                      <><span className="spinner" aria-hidden="true" /> Analyzing...</>
-                    ) : (
-                      <><span aria-hidden="true">⚡</span> Get Download Link</>
-                    )}
-                  </button>
-                </div>
+                <UrlInput
+                  placeholder={inputPlaceholder || 'Paste URL here...'}
+                  autoNavigate={false}
+                  value={urlVal}
+                  onValueChange={setUrlVal}
+                  onFetch={handleFetch}
+                />
+                {loading && (
+                  <p className="tool-hero__analyzing">
+                    <span className="spinner" aria-hidden="true" /> Analyzing URL...
+                  </p>
+                )}
               </div>
 
-              {/* Supported types */}
               {supportedTypes && (
                 <div className="tool-hero__tags">
-                  {supportedTypes.map(t => (
-                    <span key={t} className="badge badge-primary">{t}</span>
-                  ))}
+                  {supportedTypes.map(t => <span key={t} className="badge badge-primary">{t}</span>)}
                 </div>
               )}
             </div>
@@ -267,19 +338,14 @@ export default function ToolPage({
         {/* ── Result area ── */}
         <section className="tool-result section-sm" aria-live="polite" aria-atomic="true">
           <div className="container container-md">
-            {error && (
+            {fetchError && (
               <div className="tool-error animate-fade-up" role="alert">
-                <span aria-hidden="true">⚠️</span> {error}
+                <span aria-hidden="true">⚠️</span> {fetchError}
               </div>
             )}
             {loading && <SkeletonCard />}
             {result && !loading && (
-              <DownloadCard result={result} onDownload={handleDownloadFormat} />
-            )}
-            {downloaded && (
-              <p className="tool-download-note animate-fade-up">
-                🎉 Your download is being prepared! Connect a backend service (yt-dlp) to enable real file downloads.
-              </p>
+              <DownloadCard result={result} onDownload={handleDownload} busy={!!procStage} />
             )}
           </div>
         </section>
@@ -308,7 +374,8 @@ export default function ToolPage({
             <div className="tool-seo-content__inner">
               <h2>{title} — Free Online Tool</h2>
               <p>
-                Use OM Tools' <strong>{title}</strong> to download media from {platform || 'supported platforms'} quickly and for free.
+                OM Tools' <strong>{title}</strong> downloads media directly to your device from
+                {platform ? ` ${platform.charAt(0).toUpperCase() + platform.slice(1)}` : ' supported platforms'}.
                 No registration required. Works on all modern browsers and mobile devices.
               </p>
               <h3>How to use {title}</h3>
@@ -317,7 +384,7 @@ export default function ToolPage({
                 <li>Paste it into the input box above.</li>
                 <li>Click <strong>Get Download Link</strong> and wait a moment.</li>
                 <li>Choose your preferred format and quality.</li>
-                <li>Click the format button to start downloading.</li>
+                <li>The download starts immediately — processed 100% on your device.</li>
               </ol>
               <div className="tool-back-link">
                 <Link to="/" className="btn btn-outline btn-sm">← Back to All Tools</Link>
@@ -331,4 +398,44 @@ export default function ToolPage({
       </main>
     </>
   );
+}
+
+/* ── Default format lists per platform/type ── */
+function buildDefaultFormats(platform, type, isAudio, isThumbnail) {
+  if (isThumbnail) {
+    return [
+      { id: 'maxres', label: 'JPG', quality: 'MaxRes 1280×720', size: '~120 KB' },
+      { id: 'hq',     label: 'JPG', quality: 'HQ 480×360',      size: '~40 KB'  },
+      { id: 'mq',     label: 'JPG', quality: 'MQ 320×180',      size: '~20 KB'  },
+    ];
+  }
+  if (isAudio) {
+    return [
+      { id: 'mp3-320', label: 'MP3', quality: '320 kbps', size: '~8 MB'  },
+      { id: 'mp3-256', label: 'MP3', quality: '256 kbps', size: '~6 MB'  },
+      { id: 'mp3-192', label: 'MP3', quality: '192 kbps', size: '~4 MB'  },
+      { id: 'm4a',     label: 'M4A', quality: 'Original', size: '~7 MB'  },
+    ];
+  }
+  if (platform === 'youtube') {
+    if (type === 'shorts') {
+      return [
+        { id: 'mp4-1080', label: 'MP4', quality: '1080p HD', size: '~12 MB' },
+        { id: 'mp4-720',  label: 'MP4', quality: '720p',     size: '~6 MB'  },
+        { id: 'mp4-480',  label: 'MP4', quality: '480p',     size: '~3 MB'  },
+      ];
+    }
+    return [
+      { id: 'mp4-1080', label: 'MP4', quality: '1080p HD', size: '~85 MB' },
+      { id: 'mp4-720',  label: 'MP4', quality: '720p',     size: '~45 MB' },
+      { id: 'mp4-480',  label: 'MP4', quality: '480p',     size: '~25 MB' },
+      { id: 'mp4-360',  label: 'MP4', quality: '360p',     size: '~12 MB' },
+      { id: 'mp3-320',  label: 'MP3', quality: '320 kbps', size: '~8 MB'  },
+    ];
+  }
+  // Instagram / others
+  return [
+    { id: 'mp4-hd', label: 'MP4', quality: 'HD Original', size: '~20 MB' },
+    { id: 'mp4-sd', label: 'MP4', quality: 'SD',          size: '~8 MB'  },
+  ];
 }

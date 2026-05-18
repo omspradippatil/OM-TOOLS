@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
+import { AuthProvider } from './context/AuthContext.jsx';
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 
-// Media downloader pages
 import Home                from './pages/Home.jsx';
 import YoutubeDownloader   from './pages/YoutubeDownloader.jsx';
 import YoutubeMP3          from './pages/YoutubeMP3.jsx';
@@ -11,9 +12,6 @@ import InstagramDownloader from './pages/InstagramDownloader.jsx';
 import ReelDownloader      from './pages/ReelDownloader.jsx';
 import ThumbnailDownloader from './pages/ThumbnailDownloader.jsx';
 import NotFound            from './pages/NotFound.jsx';
-
-// Initialize Firebase (analytics, etc.)
-import './firebase.js';
 
 function AppLayout() {
   return (
@@ -38,7 +36,9 @@ function AppLayout() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppLayout />
+      <AuthProvider>
+        <AppLayout />
+      </AuthProvider>
     </BrowserRouter>
   );
 }
