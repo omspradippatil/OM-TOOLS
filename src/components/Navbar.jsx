@@ -4,194 +4,173 @@ import { useAuth } from '../context/AuthContext.jsx';
 import AuthModal from './AuthModal.jsx';
 import './Navbar.css';
 
-const NAV_LINKS = [
-  {
-    label: 'Media Tools',
-    children: [
-      { label: 'YouTube Downloader',   to: '/youtube-video-downloader', icon: '▶' },
-      { label: 'YouTube to MP3',       to: '/youtube-mp3-converter',    icon: '🎵' },
-      { label: 'Shorts Downloader',    to: '/shorts-downloader',        icon: '⚡' },
-      { label: 'Instagram Downloader', to: '/instagram-downloader',     icon: '📸' },
-      { label: 'Reel Downloader',      to: '/instagram-reel-downloader',icon: '🎞' },
-      { label: 'Thumbnail Download',   to: '/thumbnail-downloader',     icon: '🖼' },
-    ],
-  },
+const TOOLS_MENU = [
+  { label: 'YouTube Downloader',   to: '/youtube-video-downloader', icon: '▶', desc: 'MP4 up to 4K' },
+  { label: 'YouTube to MP3',       to: '/youtube-mp3-converter',    icon: '🎵', desc: '320kbps audio' },
+  { label: 'Shorts Downloader',    to: '/shorts-downloader',        icon: '⚡', desc: 'HD vertical video' },
+  { label: 'Instagram Downloader', to: '/instagram-downloader',     icon: '📸', desc: 'Posts & stories' },
+  { label: 'Reel Downloader',      to: '/instagram-reel-downloader',icon: '🎞', desc: 'No watermark' },
+  { label: 'Thumbnail Download',   to: '/thumbnail-downloader',     icon: '🖼', desc: 'All resolutions' },
 ];
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
-  const [mobileOpen, setMobileOpen]   = useState(false);
-  const [activeMenu, setActiveMenu]   = useState(null);
-  const [scrolled, setScrolled]       = useState(false);
-  const [showAuth, setShowAuth]       = useState(false);
-  const [userMenu, setUserMenu]       = useState(false);
-  const location                      = useLocation();
-  const userMenuRef                   = useRef(null);
+  const { user, logout }       = useAuth();
+  const [menuOpen, setMenuOpen]   = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled]   = useState(false);
+  const [showAuth, setShowAuth]   = useState(false);
+  const [userOpen, setUserOpen]   = useState(false);
+  const location = useLocation();
+  const menuRef  = useRef(null);
+  const userRef  = useRef(null);
 
-  useEffect(() => { setMobileOpen(false); setActiveMenu(null); setUserMenu(false); }, [location.pathname]);
+  // Close everything on route change
+  useEffect(() => { setMenuOpen(false); setMobileOpen(false); setUserOpen(false); }, [location.pathname]);
+
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    const onScroll = () => setScrolled(window.scrollY > 16);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === 'Escape') { setActiveMenu(null); setMobileOpen(false); setUserMenu(false); }
-    };
+    const onKey = (e) => { if (e.key === 'Escape') { setMenuOpen(false); setMobileOpen(false); setUserOpen(false); } };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  // Close user menu on outside click
+  // Outside-click handlers
   useEffect(() => {
-    function handleClick(e) {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
-        setUserMenu(false);
-      }
-    }
-    if (userMenu) document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [userMenu]);
+    const handler = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+      if (userRef.current && !userRef.current.contains(e.target)) setUserOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'User';
+  const displayName  = user?.displayName || user?.email?.split('@')[0] || 'You';
   const avatarLetter = displayName.charAt(0).toUpperCase();
 
   return (
     <>
-      <header className={`navbar${scrolled ? ' navbar--scrolled' : ''}`} role="banner">
-        <div className="navbar__inner">
-          {/* Logo */}
-          <Link to="/" className="navbar__logo" aria-label="OM Tools Home">
-            <span className="navbar__logo-icon" aria-hidden="true">⚡</span>
-            <span className="navbar__logo-text">
-              OM <span className="navbar__logo-accent">Tools</span>
-            </span>
+      <header className={`nav${scrolled ? ' nav--raised' : ''}`} role="banner">
+        <div className="nav__bar">
+
+          {/* ── Logo ── */}
+          <Link to="/" className="nav__logo" aria-label="OM Tools">
+            <span className="nav__logo-mark" aria-hidden="true">⚡</span>
+            <span className="nav__logo-name">OM<span>Tools</span></span>
           </Link>
 
-          {/* Desktop Nav */}
-          <nav className="navbar__nav" aria-label="Main navigation">
-            {NAV_LINKS.map((group) => (
-              <div key={group.label} className="navbar__group">
-                <button
-                  className={`navbar__group-trigger${activeMenu === group.label ? ' active' : ''}`}
-                  onClick={() => setActiveMenu(activeMenu === group.label ? null : group.label)}
-                  aria-expanded={activeMenu === group.label}
-                  aria-haspopup="true"
-                >
-                  {group.label}
-                  <svg className="navbar__chevron" viewBox="0 0 12 12" aria-hidden="true">
-                    <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-                  </svg>
-                </button>
-                {activeMenu === group.label && (
-                  <div className="navbar__dropdown" role="menu">
-                    {group.children.map((item) => (
-                      <NavLink
-                        key={item.to}
-                        to={item.to}
-                        className={({ isActive }) => `navbar__dropdown-item${isActive ? ' active' : ''}`}
-                        role="menuitem"
-                      >
-                        <span className="navbar__dropdown-icon" aria-hidden="true">{item.icon}</span>
-                        {item.label}
+          {/* ── Desktop links ── */}
+          <nav className="nav__links" aria-label="Primary navigation">
+            {/* Tools mega-dropdown */}
+            <div className="nav__item" ref={menuRef}>
+              <button
+                className={`nav__trigger${menuOpen ? ' active' : ''}`}
+                onClick={() => setMenuOpen(v => !v)}
+                aria-expanded={menuOpen}
+                aria-haspopup="true"
+              >
+                Tools
+                <svg className="nav__arrow" viewBox="0 0 10 6" aria-hidden="true">
+                  <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+
+              {menuOpen && (
+                <div className="nav__mega" role="menu">
+                  <p className="nav__mega-label">Media Downloaders</p>
+                  <div className="nav__mega-grid">
+                    {TOOLS_MENU.map(t => (
+                      <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__mega-item${isActive ? ' active' : ''}`} role="menuitem">
+                        <span className="nav__mega-icon" aria-hidden="true">{t.icon}</span>
+                        <span>
+                          <span className="nav__mega-name">{t.label}</span>
+                          <span className="nav__mega-desc">{t.desc}</span>
+                        </span>
                       </NavLink>
                     ))}
                   </div>
-                )}
-              </div>
-            ))}
+                  <div className="nav__mega-footer">
+                    <span>🔒 On-device processing · No uploads · 100% free</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <a href="https://om-pdf.netlify.app" target="_blank" rel="noopener noreferrer" className="nav__link">
+              PDF Tools ↗
+            </a>
           </nav>
 
-          {/* Actions */}
-          <div className="navbar__actions">
+          {/* ── Right side ── */}
+          <div className="nav__end">
             {user ? (
-              /* User avatar + dropdown */
-              <div className="navbar__user" ref={userMenuRef}>
-                <button
-                  className="navbar__avatar-btn"
-                  onClick={() => setUserMenu(!userMenu)}
-                  aria-label="User menu"
-                  aria-expanded={userMenu}
-                >
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt={displayName} className="navbar__avatar-img" />
-                  ) : (
-                    <span className="navbar__avatar-letter">{avatarLetter}</span>
-                  )}
+              <div className="nav__user" ref={userRef}>
+                <button className="nav__avatar" onClick={() => setUserOpen(v => !v)} aria-label="Account menu" aria-expanded={userOpen}>
+                  {user.photoURL
+                    ? <img src={user.photoURL} alt={displayName} className="nav__avatar-img" />
+                    : <span className="nav__avatar-letter">{avatarLetter}</span>
+                  }
                 </button>
-                {userMenu && (
-                  <div className="navbar__user-dropdown">
-                    <div className="navbar__user-info">
-                      <span className="navbar__user-name">{displayName}</span>
-                      <span className="navbar__user-email">{user.email}</span>
+                {userOpen && (
+                  <div className="nav__user-panel">
+                    <div className="nav__user-meta">
+                      <span className="nav__user-name">{displayName}</span>
+                      <span className="nav__user-email">{user.email}</span>
                     </div>
-                    <hr className="navbar__user-divider" />
-                    <button className="navbar__user-signout" onClick={logout}>
-                      <span aria-hidden="true">🚪</span> Sign Out
-                    </button>
+                    <button className="nav__signout" onClick={logout}>Sign out</button>
                   </div>
                 )}
               </div>
             ) : (
-              <button className="btn btn-outline btn-sm" onClick={() => setShowAuth(true)}>
-                Sign In
-              </button>
+              <button className="nav__signin" onClick={() => setShowAuth(true)}>Sign in</button>
             )}
 
-            <Link to="/youtube-video-downloader" className="btn btn-primary btn-sm navbar__cta">
-              Start Downloading
+            <Link to="/youtube-video-downloader" className="nav__cta">
+              Download free
             </Link>
 
+            {/* Hamburger */}
             <button
-              className="navbar__hamburger"
-              onClick={() => setMobileOpen(!mobileOpen)}
+              className={`nav__ham${mobileOpen ? ' open' : ''}`}
+              onClick={() => setMobileOpen(v => !v)}
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileOpen}
             >
-              <span className={`hamburger-bar${mobileOpen ? ' open' : ''}`} />
-              <span className={`hamburger-bar${mobileOpen ? ' open' : ''}`} />
-              <span className={`hamburger-bar${mobileOpen ? ' open' : ''}`} />
+              <span /><span /><span />
             </button>
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {/* ── Mobile drawer ── */}
         {mobileOpen && (
-          <div className="navbar__mobile" role="navigation" aria-label="Mobile navigation">
-            {NAV_LINKS.map((group) => (
-              <div key={group.label} className="navbar__mobile-group">
-                <p className="navbar__mobile-heading">{group.label}</p>
-                {group.children.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    className={({ isActive }) => `navbar__mobile-link${isActive ? ' active' : ''}`}
-                  >
-                    <span aria-hidden="true">{item.icon}</span>
-                    {item.label}
-                  </NavLink>
-                ))}
-              </div>
+          <div className="nav__drawer">
+            <p className="nav__drawer-label">Media Tools</p>
+            {TOOLS_MENU.map(t => (
+              <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__drawer-link${isActive ? ' active' : ''}`}>
+                <span aria-hidden="true">{t.icon}</span>
+                {t.label}
+              </NavLink>
             ))}
-            <div className="navbar__mobile-cta">
-              {user ? (
-                <button className="btn btn-outline" style={{ width: '100%', justifyContent: 'center' }} onClick={logout}>
-                  🚪 Sign Out ({displayName})
-                </button>
-              ) : (
-                <button className="btn btn-outline" style={{ width: '100%', justifyContent: 'center' }} onClick={() => { setMobileOpen(false); setShowAuth(true); }}>
-                  Sign In / Sign Up
-                </button>
-              )}
-              <Link to="/youtube-video-downloader" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                ⚡ Start Downloading
+            <a href="https://om-pdf.netlify.app" target="_blank" rel="noopener noreferrer" className="nav__drawer-link">
+              <span aria-hidden="true">📄</span> OM PDF — PDF Tools ↗
+            </a>
+            <div className="nav__drawer-foot">
+              {user
+                ? <button className="btn btn-outline" style={{width:'100%', justifyContent:'center'}} onClick={logout}>Sign out</button>
+                : <button className="btn btn-outline" style={{width:'100%', justifyContent:'center'}} onClick={() => { setMobileOpen(false); setShowAuth(true); }}>Sign in / Sign up</button>
+              }
+              <Link to="/youtube-video-downloader" className="btn btn-primary" style={{width:'100%', justifyContent:'center'}}>
+                ⚡ Start downloading
               </Link>
             </div>
           </div>
         )}
       </header>
 
-      {/* Auth Modal */}
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
     </>
   );

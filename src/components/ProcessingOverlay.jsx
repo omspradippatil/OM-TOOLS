@@ -10,6 +10,7 @@ const STAGES = [
 export default function ProcessingOverlay({
   stage,       // 'fetch' | 'download' | 'process' | 'done' | 'error'
   progress,    // 0–1
+  speed,
   filename,
   errorMsg,
   onCancel,
@@ -73,10 +74,13 @@ export default function ProcessingOverlay({
           <>
             <h2 className="proc-card__title">{currentStage.label}</h2>
             {filename && <p className="proc-card__filename">{filename}</p>}
-            <p className="proc-card__desc proc-card__desc--progress">
-              {stage === 'download' && `Downloading... ${pct}%`}
-              {stage === 'process'  && `Converting... ${pct}%`}
-              {stage === 'fetch'    && 'Please wait a moment...'}
+            <p className="proc-card__desc proc-card__desc--progress" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>
+                {stage === 'download' && `Downloading... ${pct}%`}
+                {stage === 'process'  && `Converting... ${pct}%`}
+                {stage === 'fetch'    && 'Please wait a moment...'}
+              </span>
+              {speed && stage === 'download' && <span className="badge badge-primary">{speed} MB/s</span>}
             </p>
           </>
         )}

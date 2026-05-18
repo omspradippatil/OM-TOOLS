@@ -112,6 +112,7 @@ export default function ToolPage({
   // Processing overlay state
   const [procStage, setProcStage]       = useState(null); // null = hidden
   const [procProgress, setProcProgress] = useState(0);
+  const [procSpeed, setProcSpeed]       = useState('');
   const [procFilename, setProcFilename] = useState('');
   const [procError, setProcError]       = useState('');
 
@@ -183,12 +184,13 @@ export default function ToolPage({
 
     setProcError('');
     setProcProgress(0);
+    setProcSpeed('');
     setProcFilename('');
     setProcStage('fetch');
 
     try {
       /* ── Stage 1: Get Cobalt signed URL ── */
-      let directUrl, filename;
+      let directUrl, audioUrl, filename;
       try {
         const cobalt = await fetchCobaltLink(sourceUrl, {
           mode:         fmtOpts.mode,
@@ -198,6 +200,7 @@ export default function ToolPage({
           signal,
         });
         directUrl = cobalt.url;
+        audioUrl  = cobalt.audioUrl;
         filename  = cobalt.filename || `om-tools-download.${fmtOpts.ext}`;
       } catch (cobaltErr) {
         // Cobalt failed — inform user clearly
@@ -220,18 +223,43 @@ export default function ToolPage({
 
       const rawData = await downloadToBuffer(
         directUrl,
-        (p) => setProcProgress(p),
+        (data) => {
+          if (typeof data === 'number') {
+            setProcProgress(data);
+          } else {
+            setProcProgress(data.progress);
+            setProcSpeed(data.speed);
+          }
+        },
         signal
       );
 
+      let audioData = null;
+      if (audioUrl) {
+        setProcProgress(0);
+        audioData = await downloadToBuffer(
+          audioUrl,
+          (data) => {
+            if (typeof data === 'number') {
+              setProcProgress(data);
+            } else {
+              setProcProgress(data.progress);
+              setProcSpeed(data.speed);
+            }
+          },
+          signal
+        );
+      }
+
       /* ── Stage 3: Convert if needed (ffmpeg.wasm) ── */
       let finalData = rawData;
-      if (fmtOpts.needsConvert) {
+      if (fmtOpts.needsConvert || audioUrl) {
         setProcStage('process');
         setProcProgress(0);
         const sourceExt = directUrl.split('.').pop()?.split('?')[0] || 'mp4';
         finalData = await convertWithFFmpeg(rawData, sourceExt, fmtOpts.ext, {
           bitrate: fmtOpts.audioBitrate ? `${fmtOpts.audioBitrate}k` : '320k',
+          audioData: audioData,
           onProgress: (p) => setProcProgress(p),
         });
       }
@@ -248,6 +276,20 @@ export default function ToolPage({
       }
       setProcError(e.message || 'Download failed. Please try again.');
       setProcStage('error');
+      
+      // Log failure to Firestore
+      try {
+        const { db } = await import('../firebase');
+        const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+        await addDoc(collection(db, 'downloadLogs'), {
+          error: e.message,
+          url: sourceUrl,
+          timestamp: serverTimestamp(),
+          stage: procStage || 'unknown'
+        });
+      } catch (logErr) {
+        console.error('Failed to save log to Firestore:', logErr);
+      }
     }
   }
 
@@ -287,6 +329,7 @@ export default function ToolPage({
         <ProcessingOverlay
           stage={procStage}
           progress={procProgress}
+          speed={procSpeed}
           filename={procFilename}
           errorMsg={procError}
           onCancel={handleCancel}
@@ -311,20 +354,28 @@ export default function ToolPage({
               <h1 className="tool-hero__title">{title}</h1>
               <p className="tool-hero__subtitle">{subtitle}</p>
 
-              <div className="tool-hero__input">
-                <UrlInput
-                  placeholder={inputPlaceholder || 'Paste URL here...'}
-                  autoNavigate={false}
-                  value={urlVal}
-                  onValueChange={setUrlVal}
-                  onFetch={handleFetch}
-                />
-                {loading && (
-                  <p className="tool-hero__analyzing">
-                    <span className="spinner" aria-hidden="true" /> Analyzing URL...
-                  </p>
-                )}
-              </div>
+              {platform !== 'youtube' ? (
+                <div className="tool-hero__coming-soon">
+                  <h3><span aria-hidden="true">🚧</span> Under Construction</h3>
+                  <p>Our raw downloader for {platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : 'this platform'} is currently being built.</p>
+                  <Link to="/youtube-video-downloader" className="btn btn-outline btn-sm">Try YouTube Downloader</Link>
+                </div>
+              ) : (
+                <div className="tool-hero__input">
+                  <UrlInput
+                    placeholder={inputPlaceholder || 'Paste URL here...'}
+                    autoNavigate={false}
+                    value={urlVal}
+                    onValueChange={setUrlVal}
+                    onFetch={handleFetch}
+                  />
+                  {loading && (
+                    <p className="tool-hero__analyzing">
+                      <span className="spinner" aria-hidden="true" /> Analyzing URL...
+                    </p>
+                  )}
+                </div>
+              )}
 
               {supportedTypes && (
                 <div className="tool-hero__tags">

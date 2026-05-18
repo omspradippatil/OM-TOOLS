@@ -10,62 +10,45 @@
  * Nothing passes through OM Tools' servers. Processing is 100% on-device.
  */
 
-// ── Cobalt API Config ──────────────────────────────────────────────────────
-// cobalt.tools is a free, open-source media API. See: https://cobalt.tools
-const COBALT_API = 'https://api.cobalt.tools';
-
 /**
  * Step 1: Ask Cobalt for a direct download URL.
- * @param {string} url        - Original media URL (YouTube, Instagram, etc.)
- * @param {object} options    - { mode: 'auto'|'audio'|'mute', quality, audioFormat, audioBitrate }
- * @returns {Promise<{url, filename, status}>}
+ * In production → calls /.netlify/functions/download (server-side, no CORS/browser blocks)
+ * In dev        → calls Cobalt API directly with minimal params
  */
 export async function fetchCobaltLink(url, options = {}) {
+  const isProd = import.meta.env.PROD;
+  // Use our raw backend (Netlify function in prod, Vite proxy in dev)
+  const endpoint = isProd ? '/.netlify/functions/download' : '/api/download';
+
+  // Build minimal body
   const body = {
     url,
-    videoQuality:  options.quality      || '1080',
-    audioFormat:   options.audioFormat  || 'mp3',
-    audioBitrate:  options.audioBitrate || '320',
-    downloadMode:  options.mode         || 'auto',
-    filenameStyle: 'pretty',
-    disableMetadata: false,
+    quality: options.quality || '1080',
+    mode: options.mode   || 'auto',
   };
 
-  const res = await fetch(COBALT_API, {
-    method:  'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept':       'application/json',
-    },
-    body: JSON.stringify(body),
-    signal: options.signal,
-  });
+  let res;
+  try {
+    res = await fetch(endpoint, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body:    JSON.stringify(body),
+      signal:  options.signal,
+    });
+  } catch (networkErr) {
+    throw new Error(`Network error — check your connection. (${networkErr.message})`);
+  }
+
+  let data;
+  try { data = await res.json(); } catch { data = {}; }
 
   if (!res.ok) {
-    throw new Error(`Cobalt API error: ${res.status} ${res.statusText}`);
+    throw new Error(data.error || `Failed to fetch video: ${res.status}`);
   }
 
-  const data = await res.json();
-
-  if (data.status === 'error') {
-    throw new Error(data.error?.code || 'Cobalt returned an error.');
-  }
-
-  if (data.status === 'picker') {
-    // picker = multiple items (e.g. Instagram slideshow)
-    // Return the first video, or audio fallback
-    const videoItem = data.picker?.find(i => i.type === 'video');
-    if (videoItem) return { url: videoItem.url, filename: videoItem.url.split('/').pop() || 'media.mp4', status: 'stream' };
-    throw new Error('Could not find a downloadable item in the response.');
-  }
-
-  // status: 'stream' | 'redirect' | 'tunnel'
-  return {
-    url:      data.url,
-    filename: data.filename || 'download',
-    status:   data.status,
-  };
+  return { url: data.url, audioUrl: data.audioUrl, filename: data.filename || 'download', status: data.status };
 }
+
 
 /**
  * Step 2: Download the raw media to a Uint8Array with progress tracking.
@@ -74,7 +57,14 @@ export async function fetchCobaltLink(url, options = {}) {
  * @param {AbortSignal} signal  - For cancellation
  */
 export async function downloadToBuffer(url, onProgress, signal) {
-  const res = await fetch(url, { signal });
+  let fetchUrl = url;
+
+  // Bypass CORS using our local Vite proxy in development
+  if (!import.meta.env.PROD && url.includes('googlevideo.com')) {
+    fetchUrl = `/api/stream?url=${encodeURIComponent(url)}`;
+  }
+
+  const res = await fetch(fetchUrl, { signal });
 
   if (!res.ok) throw new Error(`Download failed: ${res.status}`);
 
@@ -83,16 +73,29 @@ export async function downloadToBuffer(url, onProgress, signal) {
   const reader = res.body.getReader();
   const chunks = [];
   let received = 0;
+  let lastTime = Date.now();
+  let lastReceived = 0;
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
     chunks.push(value);
     received += value.length;
-    if (total && onProgress) onProgress(received / total);
+
+    const now = Date.now();
+    if (now - lastTime >= 500) {
+      const bytesPerSec = ((received - lastReceived) / (now - lastTime)) * 1000;
+      const mbPerSec = (bytesPerSec / (1024 * 1024)).toFixed(1);
+      lastTime = now;
+      lastReceived = received;
+
+      if (total && onProgress) {
+        onProgress({ progress: received / total, speed: mbPerSec });
+      }
+    }
   }
 
-  if (!total && onProgress) onProgress(1);
+  if (!total && onProgress) onProgress({ progress: 1, speed: 0 });
 
   // Merge chunks into single Uint8Array
   const merged = new Uint8Array(received);
@@ -136,10 +139,15 @@ export async function convertWithFFmpeg(inputData, inputExt, outputExt, opts = {
   const outputName = `output.${outputExt}`;
 
   await ffmpeg.writeFile(inputName, inputData);
+  if (opts.audioData) {
+    await ffmpeg.writeFile('audio.input', opts.audioData);
+  }
 
   // Build ffmpeg command based on target format
   let cmd;
-  if (outputExt === 'mp3') {
+  if (opts.audioData) {
+    cmd = ['-i', inputName, '-i', 'audio.input', '-c:v', 'copy', '-c:a', 'aac', outputName];
+  } else if (outputExt === 'mp3') {
     const bitrate = opts.bitrate || '320k';
     cmd = ['-i', inputName, '-vn', '-acodec', 'libmp3lame', '-b:a', bitrate, outputName];
   } else if (outputExt === 'm4a') {
@@ -157,6 +165,7 @@ export async function convertWithFFmpeg(inputData, inputExt, outputExt, opts = {
 
   // Cleanup
   await ffmpeg.deleteFile(inputName).catch(() => {});
+  if (opts.audioData) await ffmpeg.deleteFile('audio.input').catch(() => {});
   await ffmpeg.deleteFile(outputName).catch(() => {});
   ffmpeg.terminate();
 
