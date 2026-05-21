@@ -128,6 +128,8 @@ OM-TOOLS/
 
 ## 🛠️ Tech Stack
 
+### Current Stack
+
 | Category | Technology |
 |---|---|
 | **Framework** | [React 19](https://react.dev/) + [Vite 5](https://vitejs.dev/) |
@@ -136,6 +138,25 @@ OM-TOOLS/
 | **Analytics** | [Firebase Analytics](https://firebase.google.com/) |
 | **Styling** | Vanilla CSS (Premium Design System) |
 | **Deployment** | [Netlify](https://www.netlify.com/) |
+
+### 🔮 Future / Preferred Tooling
+
+> These tools are planned for future major refactors. **Do not migrate until explicitly requested.**
+
+#### Fullstack Framework
+
+| Tool | GitHub | Docs |
+|---|---|---|
+| **Next.js** | [vercel/next.js](https://github.com/vercel/next.js) | [nextjs.org](https://nextjs.org) |
+
+#### UI / Design System
+
+| Tool | GitHub | Docs / Site |
+|---|---|---|
+| **Tailwind CSS** | [tailwindlabs/tailwindcss](https://github.com/tailwindlabs/tailwindcss) | [tailwindcss.com](https://tailwindcss.com) |
+| **shadcn/ui** | [shadcn-ui/ui](https://github.com/shadcn-ui/ui) | [ui.shadcn.com](https://ui.shadcn.com) |
+| **Framer Motion** | [motiondivision/motion](https://github.com/motiondivision/motion) | [motion.dev](https://motion.dev) |
+| **Lucide Icons** | [lucide-icons/lucide](https://github.com/lucide-icons/lucide) | [lucide.dev](https://lucide.dev) |
 
 ---
 

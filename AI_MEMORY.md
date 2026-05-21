@@ -210,12 +210,22 @@ Expected API response shape:
 
 ## Preferred Tech for Future Expansion
 
-Per user preference, future major refactors may adopt:
-- **Next.js** (fullstack, SSR/SSG for SEO)
-- **Tailwind CSS** (utility-first styling)
-- **shadcn/ui** (component library)
-- **Framer Motion** (animations)
-- **Lucide Icons** (icon set)
+Per user preference, future major refactors may adopt the following. **Do not migrate until explicitly asked.**
+
+### Fullstack Framework
+
+| Tool | GitHub | Docs |
+|---|---|---|
+| **Next.js** | [vercel/next.js](https://github.com/vercel/next.js) | [nextjs.org](https://nextjs.org) |
+
+### UI / Design System
+
+| Tool | GitHub | Docs / Site |
+|---|---|---|
+| **Tailwind CSS** | [tailwindlabs/tailwindcss](https://github.com/tailwindlabs/tailwindcss) | [tailwindcss.com](https://tailwindcss.com) |
+| **shadcn/ui** | [shadcn-ui/ui](https://github.com/shadcn-ui/ui) | [ui.shadcn.com](https://ui.shadcn.com) |
+| **Framer Motion** | [motiondivision/motion](https://github.com/motiondivision/motion) | [motion.dev](https://motion.dev) |
+| **Lucide Icons** | [lucide-icons/lucide](https://github.com/lucide-icons/lucide) | [lucide.dev](https://lucide.dev) |
 
 Current build is Vite + Vanilla CSS — do not migrate until explicitly asked.
 
