@@ -90,13 +90,25 @@ export default function Footer() {
         </div>
 
         <div className="footer__bottom">
-          <p className="footer__copy">
-            © {year} <strong>OM Patil</strong>. All rights reserved. — OM Tools
-          </p>
-          <p className="footer__disclaimer">
-            OM Tools is a utility platform for educational purposes.
-            Only download content you own or have explicit permission to download.
-          </p>
+          <div className="footer__bottom-left">
+            <p className="footer__copy">
+              © {year} <strong>OM Patil</strong>. All rights reserved. — OM Tools
+            </p>
+            <p className="footer__disclaimer">
+              OM Tools is a utility platform for educational purposes.
+              Only download content you own or have explicit permission to download.
+            </p>
+          </div>
+          <a
+            href="https://ompradippatil.netlify.app/donate/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer__support-btn"
+            aria-label="Support this project"
+          >
+            <span aria-hidden="true">❤️</span>
+            Support Project
+          </a>
         </div>
       </div>
     </footer>

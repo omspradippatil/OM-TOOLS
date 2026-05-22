@@ -124,6 +124,14 @@
   border-top: 1px solid var(--border);
   padding-top: var(--space-lg);
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.footer__bottom-left {
+  display: flex;
   flex-direction: column;
   gap: 0.375rem;
 }
@@ -136,6 +144,34 @@
 .footer__disclaimer {
   font-size: 0.75rem;
   color: var(--text-subtle);
+}
+
+/* Support Button */
+.footer__support-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: linear-gradient(135deg, rgba(255, 107, 157, 0.1) 0%, rgba(108, 99, 255, 0.1) 100%);
+  border: 1px solid rgba(255, 107, 157, 0.3);
+  border-radius: var(--radius-full);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all var(--transition-md);
+  white-space: nowrap;
+}
+
+.footer__support-btn:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(135deg, rgba(255, 107, 157, 0.2) 0%, rgba(108, 99, 255, 0.2) 100%);
+  border-color: rgba(255, 107, 157, 0.5);
+  box-shadow: 0 4px 12px rgba(255, 107, 157, 0.15);
+}
+
+.footer__support-btn span {
+  font-size: 1rem;
 }
 
 /* ── OM PDF card ── */
