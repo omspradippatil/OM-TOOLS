@@ -110,7 +110,8 @@ async function fetchInstances() {
     }
   } catch (err) {
     clearTimeout(id);
-    console.warn('Failed to fetch dynamic Cobalt instances:', err.message || err);
+    // Expected: the 2s timeout fires if instances.cobalt.best is slow — we fall back to static pool.
+    console.debug('[Cobalt] Dynamic instances unavailable, using static pool:', err.message || err);
     // Cache empty list for 2 minutes on failure to prevent repeated timeout delays on successive clicks
     cachedDynamicInstances = [];
     lastDynamicInstancesFetch = now - DYNAMIC_INSTANCES_TTL + (2 * 60 * 1000);
@@ -262,7 +263,8 @@ async function tryCobaltInstance(instanceUrl, url, options) {
         if (verifyErr.name === 'AbortError' && options.signal?.aborted) {
           throw verifyErr;
         }
-        console.warn(`Stream verification failed for ${instanceUrl}:`, verifyErr.message || verifyErr);
+        // Skip this server — stream is empty/broken, next server will be tried
+        console.debug(`[Cobalt] Skipping ${instanceUrl} — stream check failed:`, verifyErr.message || verifyErr);
         throw new Error(`Stream verification failed: ${verifyErr.message || verifyErr}`);
       }
 
@@ -340,7 +342,7 @@ export async function fetchCobaltLink(url, options = {}) {
       console.log(`[Cobalt] Using ${instanceUrl} | size=${(result.totalSize / 1024 / 1024).toFixed(1)}MB range=${result.supportsRange}`);
       return result;
     } catch (err) {
-      console.warn(`Instance ${instanceUrl} failed:`, err.message);
+      console.debug(`[Cobalt] ${instanceUrl} skipped: ${err.message}`);
       failedInstances.set(instanceUrl, Date.now());
       lastError = err;
 
