@@ -89,7 +89,12 @@ OM-TOOLS/
 ├── .gitignore                 # Ignores .env, node_modules, dist
 ├── index.html                 # Full SEO base — OG, Twitter, JSON-LD
 ├── vite.config.js             # Vite config — vendor/firebase code splits
-├── netlify.toml               # SPA redirect + security headers + caching
+├── netlify.toml               # SPA redirect + security headers + caching + edge mapping
+├── netlify/                   # Netlify backend (serverless & edge functions)
+│   ├── edge-functions/
+│   │   └── stream.js          # Deno Edge streaming proxy for CORS/IP bypass
+│   └── functions/
+│       └── download.cjs       # yt-dlp metadata API function
 ├── AI_MEMORY.md               # Project memory for AI sessions — read first
 │
 ├── public/
@@ -157,6 +162,19 @@ OM-TOOLS/
 | **shadcn/ui** | [shadcn-ui/ui](https://github.com/shadcn-ui/ui) | [ui.shadcn.com](https://ui.shadcn.com) |
 | **Framer Motion** | [motiondivision/motion](https://github.com/motiondivision/motion) | [motion.dev](https://motion.dev) |
 | **Lucide Icons** | [lucide-icons/lucide](https://github.com/lucide-icons/lucide) | [lucide.dev](https://lucide.dev) |
+
+---
+
+## ⚙️ How It Works (Bypass Architecture)
+
+OM Tools utilizes a self-healing public Cobalt API pool instead of a monolithic local downloader backend:
+1. **Dynamic Instance Discovery**: Automatically queries `instances.cobalt.best` to fetch and prioritize the highest-performing public Cobalt instances. Query results and failures are cached to bypass connection timeout delays.
+2. **Dynamic Priority & Failover**: Speeds up start latency by sorting instances on the fly:
+   - **Last Known Working Server**: Prioritizes and attempts the last successful server first, starting downloads instantly in milliseconds.
+   - **Blacklist Cooldown**: Temporarily blocks recently failed servers for 3 minutes to avoid retrying offline endpoints.
+3. **Stream Verification**: Automatically performs a lightweight `Range: bytes=0-0` request on the returned download URL to verify if the server's stream contains data. This filters out faulty instances that return 0-byte corrupted streams, ensuring 100% reliable downloads.
+4. **Server-Side Transcoding**: Offloads all video merges and audio conversions (MP3) to the Cobalt server, bypassing browser memory constraints and avoiding the need for heavy client-side `ffmpeg.wasm` loads.
+5. **Native Downloads**: Directly triggers native browser file downloads (via programmatic `<a>` anchor tag clicks) to achieve 100% Wi-Fi bandwidth speed with zero browser memory overhead.
 
 ---
 

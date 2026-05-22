@@ -217,23 +217,27 @@ export default function ToolPage({
       }
       setProcFilename(filename);
 
-      // REDESIGN: Check if we can perform a native background download to hit 100% Wi-Fi speed and consume 0MB RAM
-      const canDownloadNatively = !fmtOpts.needsConvert && !audioUrl;
-        console.log('canDownloadNatively', canDownloadNatively);
-      if (canDownloadNatively) {
+      // Routing:
+      // • No conversion + no separate audio → native browser anchor download
+      //   Best path: browser opens its own connection, zero RAM, works with all server types.
+      // • Needs ffmpeg conversion or has separate audio track → buffer + process with ffmpeg
+      const useNativeDownload = !fmtOpts.needsConvert && !audioUrl;
+      console.log(`[Download] native=${useNativeDownload} url=${directUrl.slice(0, 60)}…`);
+
+      if (useNativeDownload) {
         let downloadUrl = directUrl;
-        if (!import.meta.env.PROD && directUrl.includes('googlevideo.com')) {
+        if (directUrl.includes('googlevideo.com')) {
           downloadUrl = `/api/stream?url=${encodeURIComponent(directUrl)}&download=1&filename=${encodeURIComponent(filename)}`;
         }
 
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = downloadUrl;
-        document.body.appendChild(iframe);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = downloadUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
         setTimeout(() => {
-          if (iframe.parentNode) {
-            document.body.removeChild(iframe);
-          }
+          if (a.parentNode) document.body.removeChild(a);
         }, 15000);
 
         setProcStage('done');
