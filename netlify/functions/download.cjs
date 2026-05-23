@@ -1,4 +1,17 @@
-const youtubedl = require('youtube-dl-exec');
+const os = require('os');
+const path = require('path');
+const { create: createYoutubeDl } = require('youtube-dl-exec');
+
+const platform = os.platform();
+let binaryPath;
+
+if (platform === 'win32') {
+  binaryPath = path.join(__dirname, '../../node_modules/youtube-dl-exec/bin/yt-dlp.exe');
+} else {
+  binaryPath = path.join(__dirname, '../bin/yt-dlp_linux');
+}
+
+const youtubedl = createYoutubeDl(binaryPath);
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {

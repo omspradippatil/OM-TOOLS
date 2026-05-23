@@ -3,6 +3,9 @@
   publish   = "dist"
   functions = "netlify/functions"
 
+[functions]
+  included_files = ["netlify/bin/**"]
+
 [[edge-functions]]
   path = "/api/stream"
   function = "stream"
