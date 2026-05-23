@@ -55,6 +55,37 @@ export default defineConfig({
           });
         });
 
+        server.middlewares.use('/api/playlist', async (req, res) => {
+          if (req.method === 'OPTIONS') {
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+            res.end();
+            return;
+          }
+          let body = '';
+          req.on('data', chunk => { body += chunk; });
+          req.on('end', async () => {
+            try {
+              const { createRequire } = await import('module');
+              const require = createRequire(import.meta.url);
+              const backendPath = require.resolve('./netlify/functions/playlist.cjs');
+              delete require.cache[backendPath]; // Force clean require
+              const handler = require(backendPath).handler;
+              if (!handler) throw new Error('handler is not a function');
+              const result = await handler({
+                httpMethod: req.method,
+                body: body,
+              });
+              res.statusCode = result.statusCode;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(result.body);
+            } catch (err) {
+              res.statusCode = 500;
+              res.end(JSON.stringify({ error: err.message }));
+            }
+          });
+        });
+
         // Add a streaming proxy to bypass YouTube CORS during local development
         server.middlewares.use('/api/stream', (req, res) => {
           const urlObj = new URL(req.url, `http://${req.headers.host}`);

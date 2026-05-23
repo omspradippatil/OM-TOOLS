@@ -38,9 +38,16 @@ exports.handler = async (event) => {
       }
 
       if (mode === 'audio') {
-        // Fast MP3: get the lowest resolution merged video (unthrottled) to extract audio from
-        const avFormats = formats.filter(f => f.vcodec !== 'none' && f.acodec !== 'none').sort((a, b) => (a.height || 999) - (b.height || 999));
-        format = avFormats[0] || formats.filter(f => f.acodec !== 'none')[0] || formats[0];
+        // Find pure audio formats (no video, has audio)
+        const audioFormats = formats.filter(f => f.vcodec === 'none' && f.acodec !== 'none');
+        // Sort by audio bitrate (abr) or total bitrate (tbr) descending
+        audioFormats.sort((a, b) => (b.abr || b.tbr || 0) - (a.abr || a.tbr || 0));
+        
+        // Fallback: if no pure audio formats, look for formats with any audio (acodec !== 'none')
+        const anyAudioFormats = formats.filter(f => f.acodec !== 'none');
+        const avFormats = anyAudioFormats.filter(f => f.vcodec !== 'none').sort((a, b) => (a.height || 999) - (b.height || 999));
+        
+        format = audioFormats[0] || avFormats[0] || anyAudioFormats[0] || formats[0];
       } else {
         const targetHeight = quality === 'max' ? 9999 : parseInt(quality, 10);
         const avFormats = formats.filter(f => f.vcodec !== 'none' && f.acodec !== 'none');

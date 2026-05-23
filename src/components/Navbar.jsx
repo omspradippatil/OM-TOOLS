@@ -8,7 +8,9 @@ const TOOLS_MENU = [
   { label: 'YouTube Downloader',   to: '/youtube-video-downloader', icon: '▶', desc: 'MP4 up to 4K' },
   { label: 'YouTube to MP3',       to: '/youtube-mp3-converter',    icon: '🎵', desc: '320kbps audio' },
   { label: 'Shorts Downloader',    to: '/shorts-downloader',        icon: '⚡', desc: 'HD vertical video' },
+  { label: 'Playlist Downloader',  to: '/youtube-playlist-downloader', icon: '📂', desc: 'Save full playlist in ZIP' },
 ];
+
 
 export default function Navbar() {
   const { user, logout }       = useAuth();

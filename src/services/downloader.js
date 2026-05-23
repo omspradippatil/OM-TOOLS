@@ -29,6 +29,8 @@ const FALLBACK_INSTANCES = [
 const failedInstances = new Map();
 const FAILURE_COOLDOWN = 3 * 60 * 1000; // 3 minutes cooldown for failed servers
 let lastWorkingInstance = null;
+let cobaltBlocked = false;
+
 
 let cachedDynamicInstances = null;
 let lastDynamicInstancesFetch = 0;
@@ -192,16 +194,21 @@ async function verifyStream(downloadUrl, userSignal) {
 async function tryCobaltInstance(instanceUrl, url, options) {
   const body = {
     url,
-    videoQuality: options.quality || '1080',
-    downloadMode: options.mode || 'auto',
-    audioFormat: options.audioFormat || 'mp3',
-    audioBitrate: options.audioBitrate || '128',
+    downloadMode: options.mode === 'audio' ? 'audio' : 'video',
   };
+
+  if (body.downloadMode === 'audio') {
+    body.audioFormat = options.audioFormat || 'mp3';
+  } else {
+    body.videoQuality = options.quality || '1080';
+  }
+
 
   const timeoutController = new AbortController();
   const timeoutId = setTimeout(() => {
     timeoutController.abort();
-  }, 8000); // 8-second timeout per instance
+  }, 4000); // 4-second timeout per instance
+
 
   const { signal, cleanup } = mergeSignals(options.signal, timeoutController.signal);
 
@@ -224,9 +231,10 @@ async function tryCobaltInstance(instanceUrl, url, options) {
     if (!res.ok) {
       const errMsg = data.error?.code || data.error || `HTTP ${res.status}`;
       const err = new Error(errMsg);
-      if (res.status === 400 || (data.status === 'error' && isClientErrorCode(errMsg))) {
+      if (isClientErrorCode(errMsg)) {
         err.isClientError = true;
       }
+
       throw err;
     }
 
@@ -292,6 +300,41 @@ async function tryCobaltInstance(instanceUrl, url, options) {
   }
 }
 
+async function tryLocalBackend(url, options) {
+  const res = await fetch('/api/download', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      url,
+      quality: options.quality || '1080',
+      mode: options.mode || 'auto',
+    }),
+    signal: options.signal,
+  });
+
+  if (res.ok) {
+    const data = await res.json();
+    if (data && data.url) {
+      console.log('[Downloader] Local backend fallback succeeded!');
+      return {
+        url: data.url,
+        audioUrl: data.audioUrl || null,
+        filename: data.filename || 'download.mp4',
+        status: data.status || 'stream',
+        totalSize: 0,
+        supportsRange: true, // yt-dlp direct streams usually support Range headers
+      };
+    }
+  }
+  const data = await res.json().catch(() => ({}));
+  if (data && data.error) {
+    throw new Error(data.error);
+  }
+  throw new Error(`HTTP ${res.status}`);
+}
+
 /**
  * Step 1: Ask Cobalt for a direct download URL.
  * Uses the first healthy server — no speed benchmarking (which consumed tunnel URLs).
@@ -299,6 +342,12 @@ async function tryCobaltInstance(instanceUrl, url, options) {
  * Returns: { url, filename, status, totalSize, supportsRange }
  */
 export async function fetchCobaltLink(url, options = {}) {
+  // If Cobalt is blocked during this session, use local backend directly
+  if (cobaltBlocked && (url.includes('youtube.com') || url.includes('youtu.be'))) {
+    console.log('[Downloader] Cobalt is blocked. Routing directly to local backend fallback for YouTube...', url);
+    return await tryLocalBackend(url, options);
+  }
+
   // 1. Fetch dynamic list of instances (with caching)
   let instances = [];
   try {
@@ -352,8 +401,22 @@ export async function fetchCobaltLink(url, options = {}) {
     }
   }
 
+  // If all Cobalt instances failed, and it is a YouTube URL, try our own local downloader backend
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    console.log('[Downloader] All Cobalt instances failed. Trying local backend fallback for YouTube...', url);
+    cobaltBlocked = true; // Flag Cobalt as blocked so subsequent items bypass it
+    try {
+      return await tryLocalBackend(url, options);
+    } catch (fallbackErr) {
+      console.warn('[Downloader] Local backend fallback failed:', fallbackErr.message || fallbackErr);
+      lastError = fallbackErr;
+    }
+  }
+
+
   throw new Error(`All available download servers failed. Last error: ${lastError ? lastError.message : 'Unknown error'}`);
 }
+
 
 
 

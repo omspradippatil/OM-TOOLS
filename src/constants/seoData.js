@@ -60,4 +60,11 @@ export const SEO_DATA = {
     keywords: 'image compressor, compress jpg online, reduce image size, compress png free',
     url: 'https://om-tools.netlify.app/image-compressor',
   },
+  'youtube-playlist-downloader': {
+    title: 'YouTube Playlist Downloader Free — Save Video/MP3 in ZIP | OM Tools',
+    description: 'Download full YouTube playlists as MP4 videos or MP3 audio in a single ZIP file. Free, on-device zipping, works on all devices.',
+    keywords: 'youtube playlist downloader, download youtube playlist, youtube playlist to mp3, save playlist zip, download playlist online free',
+    url: 'https://om-tools.netlify.app/youtube-playlist-downloader',
+  },
 };
+

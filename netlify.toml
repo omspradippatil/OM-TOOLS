@@ -8,9 +8,21 @@
   function = "stream"
 
 [[redirects]]
+  from = "/api/playlist"
+  to   = "/.netlify/functions/playlist"
+  status = 200
+
+[[redirects]]
+  from = "/api/download"
+  to   = "/.netlify/functions/download"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to   = "/index.html"
   status = 200
+
+
 
 [[headers]]
   for = "/*"

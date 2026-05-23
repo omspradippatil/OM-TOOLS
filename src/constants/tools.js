@@ -46,7 +46,23 @@ export const TOOLS = [
     isNew: false,
     isPopular: true,
   },
+  {
+    id: 'youtube-playlist',
+    slug: '/youtube-playlist-downloader',
+    name: 'Playlist Downloader',
+    shortName: 'YT Playlist',
+    description: 'Download full YouTube playlists in a single ZIP archive. Supports MP4 videos & MP3 audio.',
+    icon: '📂',
+    emoji: '📂',
+    category: 'media',
+    platforms: ['youtube'],
+    formats: ['ZIP (MP4)', 'ZIP (MP3)'],
+    qualities: ['1080p', '720p', '480p', '360p', '320kbps', '256kbps', '192kbps'],
+    isNew: true,
+    isPopular: false,
+  },
 ];
+
 
 export const CATEGORIES = [
   { id: 'media', name: 'Media Tools', description: 'Download & convert media from top platforms' },

@@ -41,7 +41,8 @@ OM-TOOLS/
 │   ├── edge-functions/
 │   │   └── stream.js       ← Deno Edge streaming proxy for CORS/IP restriction bypass
 │   └── functions/
-│       └── download.cjs    ← Metadata extraction (yt-dlp)
+│       ├── download.cjs    ← Metadata extraction (yt-dlp)
+│       └── playlist.cjs    ← Playlist metadata extraction
 ├── public/
 │   ├── robots.txt
 │   └── sitemap.xml
@@ -72,8 +73,11 @@ OM-TOOLS/
         ├── InstagramDownloader.jsx
         ├── ReelDownloader.jsx
         ├── ThumbnailDownloader.jsx
+        ├── PlaylistDownloader.jsx
+        ├── PlaylistDownloader.css
         ├── NotFound.jsx
         └── NotFound.css
+
 ```
 
 ---
@@ -115,7 +119,9 @@ OM-TOOLS/
 | `/instagram-downloader` | `InstagramDownloader` | |
 | `/instagram-reel-downloader` | `ReelDownloader` | |
 | `/thumbnail-downloader` | `ThumbnailDownloader` | |
+| `/youtube-playlist-downloader` | `PlaylistDownloader` | |
 | `*` | `NotFound` | 404 page |
+
 
 **❌ DO NOT add PDF or Image tool routes.** Those belong to om-pdf.netlify.app.
 
@@ -223,7 +229,24 @@ VITE_FIREBASE_MEASUREMENT_ID
 - [x] Increased parallel chunk concurrency in `downloadToBuffer` from 4 to 6 threads.
 - [x] Increased progress reporting interval from 500ms to 400ms for smoother real-time speed display.
 - [x] Added smart routing in `ToolPage.jsx`: files ≤ 150MB with Range support → `downloadToBuffer` (parallel multi-thread, full speed + progress overlay); files > 150MB or unknown size → native `<a>` anchor download (0 RAM overhead).
-- [x] Verified production build compiles cleanly (`✓ built in 2.84s`).
+- [x] Verified build compilation compiles cleanly (`✓ built in 2.84s`).
+
+### Session 7 — Playlist Downloader with In-Browser ZIP Compression & Backend Fallbacks
+- [x] Added Netlify serverless function `netlify/functions/playlist.cjs` using a bracket-matching JSON scanner to parse YouTube playlist HTML, automatically rewriting `music.youtube.com` domains to `www.youtube.com` to bypass YT Music's dynamic client-side rendering.
+- [x] Implemented URL normalization in the serverless backend to automatically convert mixed video-playlist URLs (`watch?v=...&list=PL...`) into dedicated clean playlist landing pages (`playlist?list=PL...`), preventing 500 parsing errors on mixed URLs.
+- [x] Configured proxy routing in `vite.config.js` and production redirects in `netlify.toml` for `/api/playlist` and `/api/download`.
+- [x] Added `jszip` client-side zip utility to `package.json` dependencies.
+- [x] Reduced individual Cobalt server timeouts from 8s to 4s in `downloader.js` to accelerate candidate fail-over speeds.
+- [x] Cleaned up Cobalt POST request payloads in `tryCobaltInstance` to strictly match Cobalt v10 schema (mapping `downloadMode` to `"video"`/`"audio"` and removing unsupported properties like `audioBitrate` that caused strict servers to fail with `error.api.invalid_body`).
+- [x] Implemented a robust fallback in `downloader.js`: if all Cobalt servers fail (e.g. returning `error.api.youtube.login` blocks), it calls our Netlify `/api/download` function running `yt-dlp`, routing it through the CORS edge streaming proxy at maximum parallel download speed.
+- [x] Added session state caching `cobaltBlocked` inside `downloader.js` to bypass Cobalt completely on subsequent items if Cobalt has failed for the current playlist download session, preventing repeated timeout delays (e.g., 30s per video) and accelerating downloads.
+- [x] Implemented modern `PlaylistDownloader` page and stylesheet, featuring a scrollable checkbox selection grid, formats dropdown, download progress modal, and custom unzipping guides (Windows, macOS, Android, iOS).
+- [x] Added smart auto-navigation from the Home page input bar for URLs containing `list=` query parameters.
+- [x] Implemented mobile/low-RAM memory warnings for playlists containing more than 10 HD video downloads.
+- [x] Verified production build compiles successfully.
+
+
+
 
 
 ---

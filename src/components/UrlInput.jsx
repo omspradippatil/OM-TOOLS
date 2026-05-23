@@ -7,8 +7,9 @@ const PLATFORM_ROUTES = {
   youtube: {
     video:    '/youtube-video-downloader',
     shorts:   '/shorts-downloader',
-    playlist: '/youtube-video-downloader',
+    playlist: '/youtube-playlist-downloader',
   },
+
   instagram: {
     reel:  '/instagram-reel-downloader',
     story: '/instagram-downloader',

@@ -11,7 +11,9 @@ import ShortsDownloader    from './pages/ShortsDownloader.jsx';
 import InstagramDownloader from './pages/InstagramDownloader.jsx';
 import ReelDownloader      from './pages/ReelDownloader.jsx';
 import ThumbnailDownloader from './pages/ThumbnailDownloader.jsx';
+import PlaylistDownloader  from './pages/PlaylistDownloader.jsx';
 import NotFound            from './pages/NotFound.jsx';
+
 
 function AppLayout() {
   return (
@@ -26,7 +28,9 @@ function AppLayout() {
         <Route path="/instagram-downloader"      element={<InstagramDownloader />} />
         <Route path="/instagram-reel-downloader" element={<ReelDownloader />} />
         <Route path="/thumbnail-downloader"      element={<ThumbnailDownloader />} />
+        <Route path="/youtube-playlist-downloader" element={<PlaylistDownloader />} />
         <Route path="*"                          element={<NotFound />} />
+
       </Routes>
       <Footer />
     </>
