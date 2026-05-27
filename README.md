@@ -28,9 +28,20 @@ Free premium media downloader & utility platform — YouTube, Instagram, Shorts,
 - 📸 **Instagram Downloader** — Posts, Reels, IGTV videos, Photos — no watermark
 - 🎞 **Instagram Reel Downloader** — Original HD quality, no watermark
 - 🖼 **Thumbnail Downloader** — MaxRes, HQ, MQ, SD thumbnail extraction
-- 🔒 **Secure** — No account needed. URLs are never stored or logged.
+- 🗂 **YouTube Playlist Downloader** — Downloader for entire playlists with multi-selection & local ZIP generation
+- ⚙️ **Client-Side Media Editor** — 9 browser-powered offline media editing tools:
+  - **Video Converter** — Convert between MP4, WEBM, MKV, AVI, and MOV
+  - **Video Trimmer** — Lossless and instant clipping by time segments
+  - **Video Compressor** — Smart CRF-based compression and resolution scaling
+  - **Video to GIF Maker** — Two-pass palette generation for high-quality animated GIFs
+  - **Video Muter** — Remove audio tracks instantly (lossless stream copy)
+  - **Audio Extractor** — Extract audio track from any video to MP3, WAV, AAC, or OGG
+  - **Audio Converter** — Convert audio between MP3, WAV, FLAC, OGG, AAC, and M4A
+  - **Audio Trimmer** — Crop audio tracks with precise start/end settings
+  - **Volume Booster** — Boost audio levels up to 4x (400%) with smart clipping warnings
+- 🔒 **Secure & Private** — Downloader requests do not store logs, and all editor tools run 100% on your device (no uploads, $0 server cost)
 - 📱 **Mobile-First** — Fully responsive, optimized for every device
-- ⚡ **Fast** — Instant URL analysis with skeleton loaders and smooth UX
+- ⚡ **Fast** — Instant URL analysis with skeleton loaders, sequential fail-over pools, and smooth UX
 - 📈 **SEO Optimized** — Sitemap, structured data, Open Graph, canonical URLs
 - 🌐 **Multi-Platform** — YouTube, Instagram, TikTok, Twitter/X, Facebook
 
@@ -48,6 +59,7 @@ Free premium media downloader & utility platform — YouTube, Instagram, Shorts,
 ```bash
 # 1. Clone the repository
 git clone https://github.com/omspradippatil/OM-TOOLS.git
+git checkout main
 cd OM-TOOLS
 
 # 2. Install dependencies
@@ -62,7 +74,7 @@ cp .env.example .env
 
 ```bash
 npm run dev
-# → http://localhost:5174
+# → http://localhost:5173
 ```
 
 ### Build for Production
@@ -88,13 +100,14 @@ OM-TOOLS/
 ├── .env                       # Firebase secrets — NEVER commit
 ├── .gitignore                 # Ignores .env, node_modules, dist
 ├── index.html                 # Full SEO base — OG, Twitter, JSON-LD
-├── vite.config.js             # Vite config — vendor/firebase code splits
-├── netlify.toml               # SPA redirect + security headers + caching + edge mapping
+├── vite.config.js             # Vite config — vendor/firebase/react chunks + proxies
+├── netlify.toml               # SPA redirect + security headers + Edge Function mapping
 ├── netlify/                   # Netlify backend (serverless & edge functions)
 │   ├── edge-functions/
 │   │   └── stream.js          # Deno Edge streaming proxy for CORS/IP bypass
 │   └── functions/
-│       └── download.cjs       # yt-dlp metadata API function
+│       ├── download.cjs       # yt-dlp metadata API function
+│       └── playlist.cjs       # YouTube playlist parser API function
 ├── AI_MEMORY.md               # Project memory for AI sessions — read first
 │
 ├── public/
@@ -103,7 +116,7 @@ OM-TOOLS/
 │
 └── src/
     ├── firebase.js            # Firebase init from env vars
-    ├── App.jsx                # Root router — all routes
+    ├── App.jsx                # Root router — all 16 routes
     ├── main.jsx               # Entry — HelmetProvider
     ├── index.css              # Global design system & tokens
     │
@@ -113,19 +126,35 @@ OM-TOOLS/
     │
     ├── components/
     │   ├── SEO.jsx            # react-helmet-async wrapper
-    │   ├── Navbar.jsx/css     # Sticky glass navbar + dropdown
+    │   ├── Navbar.jsx/css     # Sticky glass navbar + mega-dropdown (2 sections)
     │   ├── Footer.jsx/css     # Multi-col footer + OM PDF card
-    │   └── UrlInput.jsx/css   # Smart URL input + detection
+    │   ├── UrlInput.jsx/css   # Smart URL input + detection
+    │   ├── LocalToolPage.jsx  # Reusable page container for local editor tools
+    │   └── LocalToolPage.css  # Styles for drag-and-drop, controls, and download cards
+    │
+    ├── services/
+    │   ├── downloader.js      # Cobalt API pool, stream verification, parallel chunking
+    │   └── ffmpegLoader.js    # ffmpeg.wasm loader (loads single-threaded core from jsDelivr)
     │
     └── pages/
         ├── Home.jsx/css            # Landing page
-        ├── ToolPage.jsx/css        # Reusable tool page shell
+        ├── ToolPage.jsx/css        # Reusable media downloader page shell
         ├── YoutubeDownloader.jsx   # /youtube-video-downloader
         ├── YoutubeMP3.jsx          # /youtube-mp3-converter
         ├── ShortsDownloader.jsx    # /shorts-downloader
         ├── InstagramDownloader.jsx # /instagram-downloader
         ├── ReelDownloader.jsx      # /instagram-reel-downloader
         ├── ThumbnailDownloader.jsx # /thumbnail-downloader
+        ├── PlaylistDownloader.jsx  # /youtube-playlist-downloader (ZIP generation)
+        ├── VideoConverter.jsx      # /video-converter (ffmpeg.wasm)
+        ├── VideoTrimmer.jsx        # /video-trimmer (ffmpeg.wasm)
+        ├── VideoCompressor.jsx     # /video-compressor (ffmpeg.wasm)
+        ├── VideoToGif.jsx          # /video-to-gif (ffmpeg.wasm)
+        ├── VideoMuter.jsx          # /video-muter (ffmpeg.wasm)
+        ├── AudioExtractor.jsx      # /audio-extractor (ffmpeg.wasm)
+        ├── AudioConverter.jsx      # /audio-converter (ffmpeg.wasm)
+        ├── AudioTrimmer.jsx        # /audio-trimmer (ffmpeg.wasm)
+        ├── VolumeBooster.jsx       # /volume-booster (ffmpeg.wasm)
         └── NotFound.jsx/css        # 404
 ```
 
@@ -141,6 +170,7 @@ OM-TOOLS/
 | **Routing** | [React Router 7](https://reactrouter.com/) |
 | **SEO** | [react-helmet-async](https://github.com/staylor/react-helmet-async) |
 | **Analytics** | [Firebase Analytics](https://firebase.google.com/) |
+| **Client Engine** | [ffmpeg.wasm (v0.12)](https://github.com/ffmpegwasm/ffmpeg.wasm) + [JSZip (v3)](https://github.com/Stuk/jszip) |
 | **Styling** | Vanilla CSS (Premium Design System) |
 | **Deployment** | [Netlify](https://www.netlify.com/) |
 
@@ -180,14 +210,24 @@ OM Tools utilizes a self-healing public Cobalt API pool instead of a monolithic 
 
 ## 📦 Available Tool Pages
 
-| URL | Tool |
-|---|---|
-| `/youtube-video-downloader` | YouTube Video Downloader |
-| `/youtube-mp3-converter` | YouTube to MP3 Converter |
-| `/shorts-downloader` | YouTube Shorts Downloader |
-| `/instagram-downloader` | Instagram Downloader |
-| `/instagram-reel-downloader` | Instagram Reel Downloader |
-| `/thumbnail-downloader` | YouTube Thumbnail Downloader |
+| Category | URL | Tool |
+|---|---|---|
+| **Downloader** | `/youtube-video-downloader` | YouTube Video Downloader |
+| **Downloader** | `/youtube-mp3-converter` | YouTube to MP3 Converter |
+| **Downloader** | `/shorts-downloader` | YouTube Shorts Downloader |
+| **Downloader** | `/instagram-downloader` | Instagram Downloader |
+| **Downloader** | `/instagram-reel-downloader` | Instagram Reel Downloader |
+| **Downloader** | `/thumbnail-downloader` | YouTube Thumbnail Downloader |
+| **Downloader** | `/youtube-playlist-downloader` | YouTube Playlist Downloader |
+| **Media Editor** | `/video-converter` | Video Converter (ffmpeg.wasm) |
+| **Media Editor** | `/video-trimmer` | Video Trimmer (ffmpeg.wasm) |
+| **Media Editor** | `/video-compressor` | Video Compressor (ffmpeg.wasm) |
+| **Media Editor** | `/video-to-gif` | Video to GIF Maker (ffmpeg.wasm) |
+| **Media Editor** | `/video-muter` | Video Muter (ffmpeg.wasm) |
+| **Media Editor** | `/audio-extractor` | Audio Extractor (ffmpeg.wasm) |
+| **Media Editor** | `/audio-converter` | Audio Converter (ffmpeg.wasm) |
+| **Media Editor** | `/audio-trimmer` | Audio Trimmer (ffmpeg.wasm) |
+| **Media Editor** | `/volume-booster` | Volume Booster (ffmpeg.wasm) |
 
 > 🔗 **Looking for PDF tools?** Check out [**OM PDF**](https://om-pdf.netlify.app) — 20+ free offline PDF tools by the same author.
 

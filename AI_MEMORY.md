@@ -268,11 +268,16 @@ VITE_FIREBASE_MEASUREMENT_ID
 - [x] Implemented mobile/low-RAM memory warnings for playlists containing more than 10 HD video downloads.
 - [x] Verified production build compiles successfully.
 
+### Session 8 — Client-Side ffmpeg.wasm Tools & Compatibility Fixes
+- [x] Configured dynamic lazy-loading of single-threaded `@ffmpeg/core@0.12.10` from jsDelivr ESM CDN (`https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm`).
+- [x] Removed strict `SharedArrayBuffer` requirement and cross-origin isolation checks (`COOP` / `COEP` headers) by switching to the single-threaded build, allowing all editor tools to function in 100% of modern browsers (including mobile browsers) without special hosting configurations.
+- [x] Fixed file extension bugs in `VideoConverter.jsx`, `VideoTrimmer.jsx`, and `VideoMuter.jsx` where stream copying (`-c copy`) failed across mismatched container extensions (e.g. trimming a WebM file to an MP4 output). Made output containers match input file extensions.
+- [x] Reconfigured `VideoConverter.jsx` to dynamically re-encode files when converting between different formats (e.g., using `libx264`/`aac` for MP4/MKV/MOV, `libvpx`/`libvorbis` for WebM, and `mpeg4`/`libmp3lame` for AVI) while using fast stream copy only when input and output formats match.
+- [x] Switched `VideoCompressor.jsx` preset from `fast` to `ultrafast` to speed up CPU transcoding times under single-threaded WASM.
+- [x] Updated `README.md` and `AI_MEMORY.md` to reflect all client-side tool paths, architecture details, and tech stack additions.
+- [x] Verified the production build compiles cleanly (`✓ built in 3.37s`).
 
-
-
-
----
+----
 
 ## ⚠️ Constraints (Never Change)
 
