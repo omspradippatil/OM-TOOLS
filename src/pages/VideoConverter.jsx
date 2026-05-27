@@ -46,12 +46,24 @@ async function processFile(file, options, onProgress) {
   const buf = await file.arrayBuffer();
   const data = new Uint8Array(buf);
 
-  // ffmpeg args: just re-mux / re-encode
-  const args = ['-c:v', 'copy', '-c:a', 'copy'];
-  // For formats that need re-encoding (can't copy codec)
-  const reencodeFormats = ['gif', 'avi'];
-  if (reencodeFormats.includes(ext)) {
-    args.splice(0, args.length, '-c:v', 'libx264', '-c:a', 'aac');
+  let args = [];
+  const fromExt = inExt.toLowerCase();
+  const toExt = ext.toLowerCase();
+
+  if (fromExt === toExt) {
+    // Same format, just copy streams
+    args = ['-c', 'copy'];
+  } else {
+    // Different formats, re-encode to ensure container compatibility
+    if (['mp4', 'mkv', 'mov'].includes(toExt)) {
+      args = ['-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-b:a', '128k'];
+    } else if (toExt === 'webm') {
+      args = ['-c:v', 'libvpx', '-c:a', 'libvorbis', '-b:a', '128k'];
+    } else if (toExt === 'avi') {
+      args = ['-c:v', 'mpeg4', '-c:a', 'libmp3lame', '-b:a', '128k'];
+    } else {
+      args = ['-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac'];
+    }
   }
 
   const result = await runFFmpeg(data, inName, outName, args, onProgress);

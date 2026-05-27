@@ -17,7 +17,10 @@ export default defineConfig({
     },
   },
   server: {
-    // No COOP/COEP headers
+    headers: {
+      'Cross-Origin-Opener-Policy':   'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
   },
   plugins: [
     react(),

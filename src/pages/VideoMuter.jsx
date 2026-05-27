@@ -10,7 +10,7 @@ const FAQS = [
 async function processFile(file, _options, onProgress) {
   const inExt  = file.name.split('.').pop() || 'mp4';
   const inName = `input.${inExt}`;
-  const outName = 'output.mp4';
+  const outName = `output.${inExt}`;
 
   const buf  = await file.arrayBuffer();
   const data = new Uint8Array(buf);
@@ -23,7 +23,8 @@ async function processFile(file, _options, onProgress) {
   );
 
   const base = file.name.split('.').slice(0, -1).join('.') || 'video';
-  return { data: result, filename: `${base}_muted.mp4`, mime: 'video/mp4' };
+  const mimeMap = { mp4: 'video/mp4', webm: 'video/webm', mkv: 'video/x-matroska', avi: 'video/x-msvideo', mov: 'video/quicktime' };
+  return { data: result, filename: `${base}_muted.${inExt}`, mime: mimeMap[inExt.toLowerCase()] || 'video/mp4' };
 }
 
 export default function VideoMuter() {

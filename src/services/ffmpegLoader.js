@@ -1,19 +1,28 @@
 /**
  * ffmpegLoader.js
- * Lazy-loads @ffmpeg/ffmpeg (wasm) from CDN exactly once per session.
- * Caches the instance so subsequent calls are instant.
+ * Lazy-loads @ffmpeg/ffmpeg (wasm) exactly once per session.
+ * Caches the instance — subsequent calls return instantly.
+ *
+ * @ffmpeg/ffmpeg  ^0.12.x
+ * @ffmpeg/util    ^0.12.x
+ * @ffmpeg/core    0.12.6  (loaded from CDN)
  */
 
-let _ffmpegInstance = null;
-let _loadPromise    = null;
+let _instance   = null;   // { ffmpeg, fetchFile }
+let _loadPromise = null;  // in-flight load promise
 
-/** Load (or return cached) ffmpeg instance */
+/**
+ * Load (or return cached) ffmpeg instance.
+ * @param {Function} [onLog] - optional callback(message: string)
+ * @returns {Promise<{ ffmpeg, fetchFile }>}
+ */
 export async function loadFFmpeg(onLog) {
-  if (_ffmpegInstance) return _ffmpegInstance;
-  if (_loadPromise)   return _loadPromise;
+  if (_instance)    return _instance;
+  if (_loadPromise) return _loadPromise;
 
   _loadPromise = (async () => {
-    const { FFmpeg } = await import('@ffmpeg/ffmpeg');
+    // Dynamic imports keep ffmpeg out of the main bundle
+    const { FFmpeg }              = await import('@ffmpeg/ffmpeg');
     const { fetchFile, toBlobURL } = await import('@ffmpeg/util');
 
     const ffmpeg = new FFmpeg();
@@ -22,63 +31,67 @@ export async function loadFFmpeg(onLog) {
       ffmpeg.on('log', ({ message }) => onLog(message));
     }
 
-    // Load WASM from CDN (avoids bundling ~30 MB)
-    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+    // Use jsDelivr CDN — ESM is required for modern Vite bundle dynamic imports
+    const BASE = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
 
     await ffmpeg.load({
-      coreURL:    await toBlobURL(`${baseURL}/ffmpeg-core.js`,   'text/javascript'),
-      wasmURL:    await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      coreURL: await toBlobURL(`${BASE}/ffmpeg-core.js`,   'text/javascript'),
+      wasmURL: await toBlobURL(`${BASE}/ffmpeg-core.wasm`, 'application/wasm'),
     });
 
-    _ffmpegInstance = { ffmpeg, fetchFile };
-    return _ffmpegInstance;
+    _instance = { ffmpeg, fetchFile };
+    return _instance;
   })();
+
+  // If load fails, reset so we can retry
+  _loadPromise.catch(() => { _loadPromise = null; });
 
   return _loadPromise;
 }
 
 /**
- * Run an ffmpeg command on an input buffer.
+ * Run an ffmpeg command on an in-memory file.
  *
- * @param {Uint8Array} inputData  - raw bytes of the input file
- * @param {string}     inputName  - virtual filename in ffmpeg's FS (e.g. "input.mp4")
- * @param {string}     outputName - virtual filename for output (e.g. "output.mp3")
- * @param {string[]}   args       - ffmpeg CLI args (between input and output)
- * @param {Function}   onProgress - called with 0–1 progress values
- * @param {Function}   onLog      - optional log callback
- * @returns {Promise<Uint8Array>} output file bytes
+ * @param {Uint8Array}  inputData   raw bytes of input file
+ * @param {string}      inputName   virtual FS filename (e.g. "input.mp4")
+ * @param {string}      outputName  virtual FS filename (e.g. "output.mp3")
+ * @param {string[]}    args        ffmpeg CLI args between -i and output
+ * @param {Function}    [onProgress] called with 0-1
+ * @param {Function}    [onLog]      called with log string
+ * @returns {Promise<Uint8Array>}
  */
 export async function runFFmpeg(inputData, inputName, outputName, args, onProgress, onLog) {
   const { ffmpeg, fetchFile } = await loadFFmpeg(onLog);
 
-  // Track progress via ffmpeg's progress event
-  if (onProgress) {
-    ffmpeg.on('progress', ({ progress }) => {
-      onProgress(Math.min(progress, 1));
-    });
+  const progressHandler = onProgress
+    ? ({ progress }) => { onProgress(Math.max(0, Math.min(1, progress))); }
+    : null;
+
+  if (progressHandler) ffmpeg.on('progress', progressHandler);
+
+  try {
+    // Write input to virtual FS
+    await ffmpeg.writeFile(inputName, await fetchFile(new Blob([inputData])));
+
+    // Execute
+    await ffmpeg.exec(['-i', inputName, ...args, outputName]);
+
+    // Read output
+    const data = await ffmpeg.readFile(outputName);
+    return data instanceof Uint8Array ? data : new Uint8Array(data);
+
+  } finally {
+    if (progressHandler) ffmpeg.off('progress', progressHandler);
+    // Clean up virtual FS
+    try { await ffmpeg.deleteFile(inputName);  } catch { /* ok */ }
+    try { await ffmpeg.deleteFile(outputName); } catch { /* ok */ }
   }
-
-  // Write input
-  await ffmpeg.writeFile(inputName, await fetchFile(new Blob([inputData])));
-
-  // Execute
-  await ffmpeg.exec(['-i', inputName, ...args, outputName]);
-
-  // Read output
-  const data = await ffmpeg.readFile(outputName);
-
-  // Cleanup virtual FS
-  try { await ffmpeg.deleteFile(inputName);  } catch { /* ignore */ }
-  try { await ffmpeg.deleteFile(outputName); } catch { /* ignore */ }
-
-  if (onProgress) {
-    ffmpeg.off('progress');
-  }
-
-  return data instanceof Uint8Array ? data : new Uint8Array(data);
 }
 
-/** Returns true if ffmpeg.wasm can run (SharedArrayBuffer available) */
+/**
+ * Returns true when WebAssembly is supported.
+ * Since we use the single-threaded build of ffmpeg.wasm, we do not require SharedArrayBuffer.
+ */
 export function isFFmpegSupported() {
-  return typeof SharedArrayBuffer !== 'undefined';
+  return typeof WebAssembly !== 'undefined';
 }

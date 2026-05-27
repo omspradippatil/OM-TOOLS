@@ -369,7 +369,9 @@ export default function LocalToolPage({
       setStage('done');
     } catch (e) {
       if (abortRef.current) return;
-      setError(e.message || 'Processing failed. Please try a different file.');
+      console.error('[ffmpeg] Processing error:', e);
+      const msg = e?.message || String(e) || 'Processing failed. Please try a different file.';
+      setError(msg);
       setStage('error');
     }
   };
@@ -422,17 +424,17 @@ export default function LocalToolPage({
         <section className="ltp-workspace">
           <div className="container container-md">
 
-            {!supported && (
+            {!isFFmpegSupported() && (
               <div className="ltp-compat-warn" role="alert">
                 <span aria-hidden="true">⚠️</span>
                 <div>
-                  <strong>Browser not compatible.</strong> SharedArrayBuffer is required for in-browser processing.
-                  Please use <strong>Chrome 92+</strong> or <strong>Firefox 93+</strong>.
+                  <strong>Browser not compatible.</strong> <code>WebAssembly</code> is required for in-browser processing.
+                  Please update to a modern web browser (e.g. Chrome, Firefox, Safari, Edge).
                 </div>
               </div>
             )}
 
-            {supported && (
+            {isFFmpegSupported() && (
               <div className="ltp-card">
                 {/* ── Step 1: File drop (only when no file) ── */}
                 {!file && stage !== 'done' && (

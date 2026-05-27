@@ -64,7 +64,7 @@ async function processFile(file, options, onProgress) {
   const data = new Uint8Array(buf);
 
   const crf = options.crf ?? 28;
-  const args = ['-c:v', 'libx264', '-crf', String(crf), '-preset', 'fast', '-c:a', 'aac', '-b:a', '128k'];
+  const args = ['-c:v', 'libx264', '-crf', String(crf), '-preset', 'ultrafast', '-c:a', 'aac', '-b:a', '128k'];
 
   if (options.resolution && options.resolution !== 'original') {
     args.push('-vf', `scale=-2:${options.resolution}`);
