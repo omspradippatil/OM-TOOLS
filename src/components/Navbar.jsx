@@ -4,11 +4,23 @@ import { useAuth } from '../context/AuthContext.jsx';
 import AuthModal from './AuthModal.jsx';
 import './Navbar.css';
 
-const TOOLS_MENU = [
-  { label: 'YouTube Downloader',   to: '/youtube-video-downloader', icon: '▶', desc: 'MP4 up to 4K' },
-  { label: 'YouTube to MP3',       to: '/youtube-mp3-converter',    icon: '🎵', desc: '320kbps audio' },
-  { label: 'Shorts Downloader',    to: '/shorts-downloader',        icon: '⚡', desc: 'HD vertical video' },
-  { label: 'Playlist Downloader',  to: '/youtube-playlist-downloader', icon: '📂', desc: 'Save full playlist in ZIP' },
+const DOWNLOADER_MENU = [
+  { label: 'YouTube Downloader',   to: '/youtube-video-downloader',      icon: '🎬', desc: 'MP4 up to 4K' },
+  { label: 'YouTube to MP3',       to: '/youtube-mp3-converter',         icon: '🎵', desc: '320kbps audio' },
+  { label: 'Shorts Downloader',    to: '/shorts-downloader',             icon: '⚡', desc: 'HD vertical video' },
+  { label: 'Playlist Downloader',  to: '/youtube-playlist-downloader',   icon: '📂', desc: 'Save full playlist in ZIP' },
+];
+
+const EDITOR_MENU = [
+  { label: 'Video Converter',   to: '/video-converter',   icon: '🔄', desc: 'MP4 ↔ WEBM ↔ MKV' },
+  { label: 'Video Trimmer',     to: '/video-trimmer',     icon: '✂️', desc: 'Cut any video clip' },
+  { label: 'Video Compressor',  to: '/video-compressor',  icon: '🗜️', desc: 'Shrink for WhatsApp' },
+  { label: 'Video to GIF',      to: '/video-to-gif',      icon: '🎞️', desc: 'Animated GIF maker' },
+  { label: 'Video Muter',       to: '/video-muter',       icon: '🔇', desc: 'Remove audio track' },
+  { label: 'Audio Extractor',   to: '/audio-extractor',   icon: '🎵', desc: 'MP3/WAV from video' },
+  { label: 'Audio Converter',   to: '/audio-converter',   icon: '🎶', desc: 'MP3 WAV FLAC OGG' },
+  { label: 'Audio Trimmer',     to: '/audio-trimmer',     icon: '✂️', desc: 'Cut audio files' },
+  { label: 'Volume Booster',    to: '/volume-booster',    icon: '🔊', desc: 'Boost up to 4×' },
 ];
 
 
@@ -82,7 +94,20 @@ export default function Navbar() {
                 <div className="nav__mega" role="menu">
                   <p className="nav__mega-label">Media Downloaders</p>
                   <div className="nav__mega-grid">
-                    {TOOLS_MENU.map(t => (
+                    {DOWNLOADER_MENU.map(t => (
+                      <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__mega-item${isActive ? ' active' : ''}`} role="menuitem">
+                        <span className="nav__mega-icon" aria-hidden="true">{t.icon}</span>
+                        <span>
+                          <span className="nav__mega-name">{t.label}</span>
+                          <span className="nav__mega-desc">{t.desc}</span>
+                        </span>
+                      </NavLink>
+                    ))}
+                  </div>
+                  <div className="nav__mega-divider" aria-hidden="true" />
+                  <p className="nav__mega-label">🔒 Video &amp; Audio Editor <span className="badge badge-new" style={{fontSize:'0.65rem',padding:'0.15rem 0.5rem',verticalAlign:'middle'}}>Local</span></p>
+                  <div className="nav__mega-grid nav__mega-grid--wide">
+                    {EDITOR_MENU.map(t => (
                       <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__mega-item${isActive ? ' active' : ''}`} role="menuitem">
                         <span className="nav__mega-icon" aria-hidden="true">{t.icon}</span>
                         <span>
@@ -93,7 +118,7 @@ export default function Navbar() {
                     ))}
                   </div>
                   <div className="nav__mega-footer">
-                    <span>🔒 On-device processing · No uploads · 100% free</span>
+                    <span>🔒 On-device processing · No upload · 100% private · Free forever</span>
                   </div>
                 </div>
               )}
@@ -147,8 +172,15 @@ export default function Navbar() {
         {/* ── Mobile drawer ── */}
         {mobileOpen && (
           <div className="nav__drawer">
-            <p className="nav__drawer-label">Media Tools</p>
-            {TOOLS_MENU.map(t => (
+            <p className="nav__drawer-label">Media Downloaders</p>
+            {DOWNLOADER_MENU.map(t => (
+              <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__drawer-link${isActive ? ' active' : ''}`}>
+                <span aria-hidden="true">{t.icon}</span>
+                {t.label}
+              </NavLink>
+            ))}
+            <p className="nav__drawer-label" style={{marginTop:'1rem'}}>🔒 Video &amp; Audio Editor</p>
+            {EDITOR_MENU.map(t => (
               <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__drawer-link${isActive ? ' active' : ''}`}>
                 <span aria-hidden="true">{t.icon}</span>
                 {t.label}

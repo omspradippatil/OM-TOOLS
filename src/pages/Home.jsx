@@ -125,9 +125,9 @@ function ToolCard({ tool }) {
 
 /* ── Stats data ── */
 const STATS = [
-  { label: 'Videos Downloaded', value: 0,  suffix: '',  prefix: '' },
-  { label: 'Tools Available',   value: 3,  suffix: '',  prefix: '' },
-  { label: 'Uptime',            value: 99, suffix: '%', prefix: '' },
+  { label: 'Videos Downloaded', value: 0,              suffix: '',  prefix: '' },
+  { label: 'Tools Available',   value: TOOLS.length,   suffix: '+', prefix: '' },
+  { label: 'Uptime',            value: 99,             suffix: '%', prefix: '' },
 ];
 
 function StatCard({ stat, dynamicValue }) {
@@ -262,11 +262,24 @@ export default function Home() {
               </p>
               <h2 className="section-title">Everything you need in one place</h2>
               <p className="section-subtitle">
-                From media downloading to PDF processing — premium tools, completely free.
+                From media downloading to in-browser video editing — premium tools, completely free.
               </p>
             </div>
+
+            {/* Media Downloaders */}
+            <p className="tools-category-label">📥 Media Downloaders</p>
             <div className="tools-grid">
-              {TOOLS.map((tool) => (
+              {TOOLS.filter(t => t.category === 'media').map((tool) => (
+                <ToolCard key={tool.id} tool={tool} />
+              ))}
+            </div>
+
+            {/* Video & Audio Editor */}
+            <p className="tools-category-label" style={{ marginTop: '2.5rem' }}>
+              🔒 Video &amp; Audio Editor <span className="badge badge-success" style={{ fontSize: '0.7rem', verticalAlign: 'middle' }}>100% Local</span>
+            </p>
+            <div className="tools-grid">
+              {TOOLS.filter(t => t.category === 'editor').map((tool) => (
                 <ToolCard key={tool.id} tool={tool} />
               ))}
             </div>

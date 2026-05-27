@@ -36,7 +36,7 @@ OM-TOOLS/
 ├── .gitignore
 ├── index.html              ← Full SEO: OG, Twitter, JSON-LD, sitemap link
 ├── vite.config.js          ← Code-split: vendor, firebase chunks
-├── netlify.toml            ← SPA redirect, security headers, asset caching, edge mapping
+├── netlify.toml            ← SPA redirect, security headers (incl. COOP/COEP for ffmpeg.wasm), asset caching
 ├── netlify/
 │   ├── edge-functions/
 │   │   └── stream.js       ← Deno Edge streaming proxy for CORS/IP restriction bypass
@@ -52,18 +52,23 @@ OM-TOOLS/
     ├── main.jsx            ← HelmetProvider entry
     ├── index.css           ← Global design system (tokens, buttons, cards, animations)
     ├── constants/
-    │   ├── tools.js        ← TOOLS array, SUPPORTED_PLATFORMS, detectPlatform()
-    │   └── seoData.js      ← Per-page SEO metadata
+    │   ├── tools.js        ← TOOLS array (media + editor categories), CATEGORIES, detectPlatform()
+    │   └── seoData.js      ← Per-page SEO metadata (13 pages)
     ├── components/
     │   ├── SEO.jsx         ← react-helmet-async wrapper
-    │   ├── Navbar.jsx      ← Sticky glass navbar, dropdown, hamburger
+    │   ├── Navbar.jsx      ← Sticky glass navbar, mega-dropdown (2 sections), hamburger
     │   ├── Navbar.css
     │   ├── Footer.jsx      ← Multi-col footer + OM PDF card
     │   ├── Footer.css
     │   ├── UrlInput.jsx    ← Smart URL input with platform detection
-    │   └── UrlInput.css
+    │   ├── UrlInput.css
+    │   ├── LocalToolPage.jsx  ← ★ NEW — Shared wrapper for file-upload / ffmpeg.wasm tools
+    │   └── LocalToolPage.css  ← ★ NEW — Drop zone, file card, controls, output card styles
+    ├── services/
+    │   ├── downloader.js   ← Cobalt API pool, stream verification, parallel chunking
+    │   └── ffmpegLoader.js ← ★ NEW — Lazy-loads ffmpeg.wasm from CDN, caches instance
     └── pages/
-        ├── Home.jsx        ← Hero, stats, tool grid, platforms, features, CTA, FAQ
+        ├── Home.jsx        ← Hero, stats, categorized tool grid, platforms, features, CTA, FAQ
         ├── Home.css
         ├── ToolPage.jsx    ← Reusable media downloader page (skeleton, result card)
         ├── ToolPage.css
@@ -75,6 +80,15 @@ OM-TOOLS/
         ├── ThumbnailDownloader.jsx
         ├── PlaylistDownloader.jsx
         ├── PlaylistDownloader.css
+        ├── VideoConverter.jsx     ← ★ NEW — Convert video formats (MP4/WEBM/MKV/AVI/MOV)
+        ├── VideoTrimmer.jsx       ← ★ NEW — Trim video by start/end seconds (stream copy)
+        ├── VideoCompressor.jsx    ← ★ NEW — Compress with CRF + resolution scaling
+        ├── VideoToGif.jsx         ← ★ NEW — Two-pass palette GIF generation
+        ├── VideoMuter.jsx         ← ★ NEW — Strip audio track (-an flag, instant)
+        ├── AudioExtractor.jsx     ← ★ NEW — Extract audio to MP3/WAV/AAC/OGG
+        ├── AudioConverter.jsx     ← ★ NEW — Convert audio between formats
+        ├── AudioTrimmer.jsx       ← ★ NEW — Trim audio by start/end seconds
+        ├── VolumeBooster.jsx      ← ★ NEW — Boost volume up to 4× with ffmpeg volume filter
         ├── NotFound.jsx
         └── NotFound.css
 
@@ -112,7 +126,7 @@ OM-TOOLS/
 
 | Path | Component | Notes |
 |---|---|---|
-| `/` | `Home` | Full landing page |
+| `/` | `Home` | Full landing page — tools split by category |
 | `/youtube-video-downloader` | `YoutubeDownloader` | |
 | `/youtube-mp3-converter` | `YoutubeMP3` | |
 | `/shorts-downloader` | `ShortsDownloader` | |
@@ -120,6 +134,15 @@ OM-TOOLS/
 | `/instagram-reel-downloader` | `ReelDownloader` | |
 | `/thumbnail-downloader` | `ThumbnailDownloader` | |
 | `/youtube-playlist-downloader` | `PlaylistDownloader` | |
+| `/video-converter` | `VideoConverter` | ffmpeg.wasm |
+| `/video-trimmer` | `VideoTrimmer` | ffmpeg.wasm |
+| `/video-compressor` | `VideoCompressor` | ffmpeg.wasm |
+| `/video-to-gif` | `VideoToGif` | ffmpeg.wasm, 2-pass palette |
+| `/video-muter` | `VideoMuter` | ffmpeg.wasm, stream copy |
+| `/audio-extractor` | `AudioExtractor` | ffmpeg.wasm |
+| `/audio-converter` | `AudioConverter` | ffmpeg.wasm |
+| `/audio-trimmer` | `AudioTrimmer` | ffmpeg.wasm |
+| `/volume-booster` | `VolumeBooster` | ffmpeg.wasm |
 | `*` | `NotFound` | 404 page |
 
 

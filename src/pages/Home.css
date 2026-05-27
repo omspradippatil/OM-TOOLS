@@ -205,6 +205,18 @@
   gap: var(--space-lg);
 }
 
+.tools-category-label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
 .tool-card {
   position: relative;
   display: flex;
