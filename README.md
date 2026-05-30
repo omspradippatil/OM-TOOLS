@@ -283,7 +283,7 @@ This project uses a **Proprietary License** — see [LICENSE](LICENSE) for full 
 
 ## ⭐ Show Your Support
 
-If you find this project helpful, please give it a **⭐ star** on GitHub!
+If you find this project helpful, please give it a **⭐ star** on GitHub or consider [supporting me](https://ompradippatil.netlify.app/donate)!
 
 ---
 
