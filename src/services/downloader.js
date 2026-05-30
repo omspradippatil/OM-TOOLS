@@ -15,14 +15,14 @@
  */
 
 const FALLBACK_INSTANCES = [
-  'https://dog.kittycat.boo',
-  'https://fox.kittycat.boo',
-  'https://api.cobalt.liubquanti.click',
-  'https://cobaltapi.kittycat.boo',
-  'https://cobaltapi.squair.xyz',
-  'https://api.cobalt.blackcat.sweeux.org',
-  'https://api.dl.woof.monster',
-  'https://cobaltapi.cjs.nz'
+  'https://cobalt.api.timelessnesses.me',
+  'https://cobalt.drgns.space',
+  'https://cobalt.catto.space',
+  'https://co.wuk.sh',
+  'https://cobalt.darwi.dev',
+  'https://cobaltapi.cjs.nz',
+  'https://api.cobalt.tools',
+  'https://cobalt.api.minnick.me',
 ];
 
 // State caching for Cobalt instances to maximize start speed and prevent timeout delays
@@ -337,15 +337,40 @@ async function tryLocalBackend(url, options) {
 
 /**
  * Step 1: Ask Cobalt for a direct download URL.
- * Uses the first healthy server — no speed benchmarking (which consumed tunnel URLs).
- * Real speed gain comes from 6-thread parallel chunking in downloadToBuffer.
+ * For YouTube, tries our own yt-dlp backend FIRST (most reliable),
+ * then falls back to Cobalt public instances.
  * Returns: { url, filename, status, totalSize, supportsRange }
  */
 export async function fetchCobaltLink(url, options = {}) {
-  // If Cobalt is blocked during this session, use local backend directly
-  if (cobaltBlocked && (url.includes('youtube.com') || url.includes('youtu.be'))) {
-    console.log('[Downloader] Cobalt is blocked. Routing directly to local backend fallback for YouTube...', url);
-    return await tryLocalBackend(url, options);
+  const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+
+  // For YouTube: try our own yt-dlp backend first — it uses the iOS player client
+  // which bypasses YouTube's bot-check. Cobalt is the secondary fallback.
+  if (isYouTube) {
+    try {
+      const result = await tryLocalBackend(url, options);
+      console.log('[Downloader] yt-dlp backend succeeded for YouTube.');
+      return result;
+    } catch (backendErr) {
+      const msg = backendErr.message || '';
+      console.warn('[Downloader] yt-dlp backend failed:', msg.slice(0, 120));
+
+      // If content is definitely unavailable (private/removed), don't bother with Cobalt
+      if (
+        msg.includes('Video unavailable') ||
+        msg.includes('Private video') ||
+        msg.includes('This video has been removed') ||
+        msg.includes('age-restricted')
+      ) {
+        throw backendErr;
+      }
+      // Otherwise fall through to Cobalt pool
+    }
+  }
+
+  // If Cobalt is blocked during this session, abort early for YouTube
+  if (cobaltBlocked && isYouTube) {
+    throw new Error('All YouTube download servers are currently blocked or rate-limited. Please try again in a few minutes.');
   }
 
   // 1. Fetch dynamic list of instances (with caching)
@@ -401,18 +426,10 @@ export async function fetchCobaltLink(url, options = {}) {
     }
   }
 
-  // If all Cobalt instances failed, and it is a YouTube URL, try our own local downloader backend
-  if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    console.log('[Downloader] All Cobalt instances failed. Trying local backend fallback for YouTube...', url);
-    cobaltBlocked = true; // Flag Cobalt as blocked so subsequent items bypass it
-    try {
-      return await tryLocalBackend(url, options);
-    } catch (fallbackErr) {
-      console.warn('[Downloader] Local backend fallback failed:', fallbackErr.message || fallbackErr);
-      lastError = fallbackErr;
-    }
+  // All Cobalt instances also failed
+  if (isYouTube) {
+    cobaltBlocked = true;
   }
-
 
   throw new Error(`All available download servers failed. Last error: ${lastError ? lastError.message : 'Unknown error'}`);
 }
@@ -422,9 +439,9 @@ export async function fetchCobaltLink(url, options = {}) {
 
 /**
  * Step 2: Download the raw media to a Uint8Array.
- * Uses 6x parallel chunk downloading if supported by the server,
- * multiplying download speeds by up to 6x and bypassing connection throttling.
- * Falls back dynamically to robust sequential downloading if Range headers are not supported.
+ * Uses a rolling-queue parallel chunker: fixed 2MB chunks, 8 concurrent connections.
+ * This bypasses per-connection throttling while keeping memory bounded.
+ * Falls back to robust sequential streaming if Range headers are not supported.
  */
 export async function downloadToBuffer(url, onProgress, signal) {
   let fetchUrl = url;
@@ -435,105 +452,134 @@ export async function downloadToBuffer(url, onProgress, signal) {
   }
 
   try {
-    // 1. Try to fetch content length using a lightweight Range check
+    // 1. Probe total size and Range support with a lightweight HEAD/GET
     const sizeRes = await fetch(fetchUrl, {
+      method: 'GET',
       headers: { 'Range': 'bytes=0-0' },
-      signal
+      signal,
     });
 
-    if (!sizeRes.ok) {
-      throw new Error(`Range check returned status: ${sizeRes.status}`);
+    if (!sizeRes.ok && sizeRes.status !== 206) {
+      throw new Error(`Range probe returned status: ${sizeRes.status}`);
     }
 
-    const contentRange = sizeRes.headers.get('Content-Range');
+    // Drain 1-byte body immediately
+    await sizeRes.body?.cancel().catch(() => {});
+
+    // Try Content-Range first (e.g. "bytes 0-0/45678901")
     let totalSize = 0;
+    const contentRange = sizeRes.headers.get('Content-Range');
     if (contentRange) {
       const parts = contentRange.split('/');
-      if (parts.length > 1) {
-        totalSize = parseInt(parts[1], 10);
-      }
+      if (parts.length > 1) totalSize = parseInt(parts[1], 10) || 0;
+    }
+    // Fallback: Content-Length on the full response
+    if (!totalSize) {
+      const cl = sizeRes.headers.get('Content-Length');
+      if (cl) totalSize = parseInt(cl, 10) || 0;
+    }
+    // Fallback: Cobalt Estimated-Content-Length
+    if (!totalSize) {
+      const est = sizeRes.headers.get('Estimated-Content-Length');
+      if (est && est !== '-1') totalSize = parseInt(est, 10) || 0;
     }
 
-    // If total size is valid and larger than 3MB, use parallel 6-thread download
-    if (totalSize > 3 * 1024 * 1024) {
-      const concurrency = 6;
-      const chunkSize = Math.ceil(totalSize / concurrency);
-      const promises = [];
-      const progressTracker = Array(concurrency).fill(0);
+    const supportsRange = sizeRes.status === 206 ||
+      (sizeRes.headers.get('Accept-Ranges') || '').toLowerCase() === 'bytes';
 
-      let lastTime = Date.now();
-      let lastBytes = 0;
-      let totalReceived = 0;
+    // Use parallel rolling-queue if we know the total size and Range is supported
+    if (totalSize > 3 * 1024 * 1024 && supportsRange) {
+      const CHUNK_SIZE  = 2 * 1024 * 1024; // 2 MB per chunk — keeps memory bounded
+      const CONCURRENCY = 8;               // 8 parallel connections
 
-      const updateProgress = (index, bytesReceived) => {
-        progressTracker[index] = bytesReceived;
-        totalReceived = progressTracker.reduce((sum, val) => sum + val, 0);
+      const numChunks = Math.ceil(totalSize / CHUNK_SIZE);
+      const chunkBuffers = new Array(numChunks);
 
+      let nextChunk      = 0; // next chunk index to dispatch
+      let receivedBytes  = 0;
+      let lastTime       = Date.now();
+      let lastBytes      = 0;
+
+      const reportProgress = () => {
         const now = Date.now();
-        if (now - lastTime >= 400) {
-          const bytesPerSec = ((totalReceived - lastBytes) / (now - lastTime)) * 1000;
-          const mbPerSec = (bytesPerSec / (1024 * 1024)).toFixed(1);
-          lastTime = now;
-          lastBytes = totalReceived;
-
-          if (onProgress) {
-            onProgress({ progress: totalReceived / totalSize, speed: mbPerSec });
-          }
+        if (onProgress && now - lastTime >= 300) {
+          const bytesPerSec = ((receivedBytes - lastBytes) / (now - lastTime)) * 1000;
+          lastTime  = now;
+          lastBytes = receivedBytes;
+          onProgress({
+            progress: Math.min(receivedBytes / totalSize, 1),
+            speed:    (bytesPerSec / (1024 * 1024)).toFixed(1),
+          });
         }
       };
 
       const downloadChunk = async (index) => {
-        const start = index * chunkSize;
-        const end = Math.min(start + chunkSize - 1, totalSize - 1);
+        const start = index * CHUNK_SIZE;
+        const end   = Math.min(start + CHUNK_SIZE - 1, totalSize - 1);
 
-        const chunkRes = await fetch(fetchUrl, {
+        const res = await fetch(fetchUrl, {
           headers: { 'Range': `bytes=${start}-${end}` },
-          signal
+          signal,
         });
+        if (!res.ok) throw new Error(`Chunk ${index} failed: HTTP ${res.status}`);
 
-        if (!chunkRes.ok) throw new Error(`Chunk ${index} failed: ${chunkRes.status}`);
-
-        const reader = chunkRes.body.getReader();
-        const chunks = [];
-        let received = 0;
+        const reader = res.body.getReader();
+        const parts  = [];
+        let chunkReceived = 0;
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          chunks.push(value);
-          received += value.length;
-          updateProgress(index, received);
+          parts.push(value);
+          chunkReceived  += value.length;
+          receivedBytes  += value.length;
+          reportProgress();
         }
 
-        const chunkData = new Uint8Array(received);
-        let offset = 0;
-        for (const chunk of chunks) {
-          chunkData.set(chunk, offset);
-          offset += chunk.length;
-        }
-        return chunkData;
+        // Assemble this chunk's data
+        const buf = new Uint8Array(chunkReceived);
+        let off = 0;
+        for (const p of parts) { buf.set(p, off); off += p.length; }
+        chunkBuffers[index] = buf;
       };
 
-      // Start parallel downloads
-      for (let i = 0; i < concurrency; i++) {
-        promises.push(downloadChunk(i));
+      // Rolling queue: always keep CONCURRENCY workers in flight
+      const workers = new Set();
+      const errors  = [];
+
+      const dispatch = () => {
+        while (workers.size < CONCURRENCY && nextChunk < numChunks) {
+          const idx = nextChunk++;
+          const p = downloadChunk(idx).catch(e => errors.push(e));
+          workers.add(p);
+          p.finally(() => { workers.delete(p); dispatch(); });
+        }
+      };
+
+      dispatch();
+
+      // Wait until all workers finish
+      while (workers.size > 0) {
+        await Promise.race(workers);
       }
 
-      const results = await Promise.all(promises);
+      if (errors.length > 0) throw errors[0];
 
-      // Concatenate all concurrent chunks
+      // Concatenate ordered chunks
       const finalData = new Uint8Array(totalSize);
       let offset = 0;
-      for (const resData of results) {
-        finalData.set(resData, offset);
-        offset += resData.length;
+      for (const buf of chunkBuffers) {
+        finalData.set(buf, offset);
+        offset += buf.length;
       }
 
-      if (onProgress) onProgress({ progress: 1, speed: 0 });
+      if (onProgress) onProgress({ progress: 1, speed: '0' });
+      console.log(`[Download] Parallel done — ${numChunks} chunks, ${(totalSize/1024/1024).toFixed(1)} MB`);
       return finalData;
     }
   } catch (err) {
-    console.warn('Parallel download failed or not supported, falling back to sequential stream:', err);
+    if (err.name === 'AbortError') throw err;
+    console.warn('[Download] Parallel chunker failed, falling back to sequential:', err.message);
   }
 
   // 2. Sequential fallback (standard single-thread stream)

@@ -203,12 +203,31 @@ export default function ToolPage({
         audioUrl  = cobalt.audioUrl;
         filename  = cobalt.filename || `om-tools-download.${fmtOpts.ext}`;
       } catch (cobaltErr) {
-        // Cobalt failed — inform user clearly
-        throw new Error(
-          `Could not fetch the download link. ${cobaltErr.message || ''}\n\n` +
-          'This can happen if the video is age-restricted, private, or the URL format changed. ' +
-          'Try a different video or check the URL.'
-        );
+        // Log full technical error to console for debugging
+        console.error('[ToolPage] Download link fetch failed:', cobaltErr);
+
+        const raw = cobaltErr.message || '';
+        // Extract a clean single-line error (yt-dlp dumps multi-line errors)
+        const firstLine = raw.split('\n').find(l => l.trim().length > 10) || raw;
+
+        // Map known failure patterns to friendly messages
+        let userMsg;
+        if (raw.includes('age-restricted') || raw.includes('age restricted')) {
+          userMsg = 'This video is age-restricted and cannot be downloaded without login.';
+        } else if (raw.includes('Private video') || raw.includes('private')) {
+          userMsg = 'This video is private. Only the owner can download it.';
+        } else if (raw.includes('Video unavailable') || raw.includes('unavailable')) {
+          userMsg = 'This video is unavailable or has been removed.';
+        } else if (raw.includes('Sign in') || raw.includes('bot') || raw.includes('login')) {
+          userMsg = 'YouTube is blocking server-side downloads right now. Try again in a minute — our backend automatically retries with multiple bypass methods.';
+        } else if (raw.includes('network') || raw.includes('timed out') || raw.includes('timeout')) {
+          userMsg = 'Network timeout. The download servers are busy — please try again.';
+        } else {
+          // Show a cleaned-up first line
+          userMsg = firstLine.length < 200 ? firstLine : 'Could not fetch the download link. Please try again or use a different URL.';
+        }
+
+        throw new Error(userMsg);
       }
 
       // Ensure correct extension in filename
@@ -218,21 +237,20 @@ export default function ToolPage({
       setProcFilename(filename);
 
       // Routing:
-      // • No conversion + no separate audio → native browser anchor download
-      //   Best path: browser opens its own connection, zero RAM, works with all server types.
-      // • Needs ffmpeg conversion or has separate audio track → buffer + process with ffmpeg
-      const useNativeDownload = !fmtOpts.needsConvert && !audioUrl;
-      console.log(`[Download] native=${useNativeDownload} url=${directUrl.slice(0, 60)}…`);
+      // • googlevideo.com URL (from yt-dlp backend) → 6-thread parallel chunked download
+      //   via /api/stream edge proxy. Native anchor through a proxy is single-connection
+      //   and caps at ~0.8 Mbps. Parallel chunks blast through at full bandwidth.
+      // • No conversion + not googlevideo + no separate audio → native browser anchor.
+      //   Best path: zero RAM, no progress UI needed, Cobalt tunnel URLs work great here.
+      // • Needs ffmpeg conversion or has separate audio track → buffer + process with ffmpeg.
+      const isGoogleVideo = directUrl.includes('googlevideo.com');
+      const useNativeDownload = !fmtOpts.needsConvert && !audioUrl && !isGoogleVideo;
+      console.log(`[Download] native=${useNativeDownload} googleVideo=${isGoogleVideo} url=${directUrl.slice(0, 60)}…`);
 
       if (useNativeDownload) {
-        let downloadUrl = directUrl;
-        if (directUrl.includes('googlevideo.com')) {
-          downloadUrl = `/api/stream?url=${encodeURIComponent(directUrl)}&download=1&filename=${encodeURIComponent(filename)}`;
-        }
-
         const a = document.createElement('a');
         a.style.display = 'none';
-        a.href = downloadUrl;
+        a.href = directUrl;
         a.download = filename;
         document.body.appendChild(a);
         a.click();

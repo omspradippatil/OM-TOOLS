@@ -65,7 +65,7 @@ OM-TOOLS/
     │   ├── LocalToolPage.jsx  ← ★ NEW — Shared wrapper for file-upload / ffmpeg.wasm tools
     │   └── LocalToolPage.css  ← ★ NEW — Drop zone, file card, controls, output card styles
     ├── services/
-    │   ├── downloader.js   ← Cobalt API pool, stream verification, parallel chunking
+    │   ├── downloader.js   ← yt-dlp backend (primary for YouTube) + Cobalt API pool fallback, stream verification, parallel chunking
     │   └── ffmpegLoader.js ← ★ NEW — Lazy-loads ffmpeg.wasm from CDN, caches instance
     └── pages/
         ├── Home.jsx        ← Hero, stats, categorized tool grid, platforms, features, CTA, FAQ
@@ -191,14 +191,15 @@ VITE_FIREBASE_MEASUREMENT_ID
 - For YouTube: extracts video ID and uses `img.youtube.com` CDN for real thumbnails.
 - Format buttons call `handleDownload()` to trigger on-device download and conversion.
 
-### Download & Proxy Architecture (Bypass / Direct Cobalt Pool):
-1. **Dynamic Cobalt Discovery**: The frontend queries `instances.cobalt.best` to discover active public Cobalt instances on-demand, falling back to a pre-verified pool of 8 instances. API results (and failures) are cached in memory to bypass 2-second timeout delays on subsequent requests.
-2. **Dynamic Priority & Failover**: The downloader uses smart memory caching to speed up startup times:
+### Download & Proxy Architecture (yt-dlp First → Cobalt Fallback):
+1. **yt-dlp Backend (Primary for YouTube)**: The frontend first calls our own Netlify function `netlify/functions/download.cjs` which runs `yt-dlp` with `--extractor-args "youtube:player_client=ios"`. The iOS player client bypasses YouTube's "sign in to confirm you're not a bot" requirement entirely. Falls back through `tv_embedded` → `mweb` → `default` clients if one fails.
+2. **Dynamic Cobalt Discovery (Secondary Fallback)**: If the yt-dlp backend fails for non-content-related reasons, the frontend queries `instances.cobalt.best` to discover active public Cobalt instances on-demand, falling back to a pre-verified pool of 8 instances. API results (and failures) are cached in memory to bypass 2-second timeout delays on subsequent requests.
+3. **Dynamic Priority & Failover**: The downloader uses smart memory caching to speed up startup times:
    - **Last Known Working Server**: The last successful Cobalt server is prioritized and tried first, reducing start latency to milliseconds.
    - **Blacklist Cooldown**: Recently failed servers are temporarily blacklisted for 3 minutes to avoid retrying them.
-3. **Stream Verification**: When an instance returns a download link, the client performs a lightweight `Range: bytes=0-0` GET fetch. If the instance returns an empty stream (status 200/206 with `Content-Length: 0` and missing or `-1` `Estimated-Content-Length`), it fails verification. The system automatically discards the broken instance and tries the next candidate in the pool.
-4. **Direct Server-Side Processing**: The frontend requests Cobalt to fetch, transcode, and merge the media server-side. This avoids browser CORS errors and YouTube IP bans, and eliminates client-side `ffmpeg.wasm` CPU/memory overhead.
-5. **Native Browser Download**: All formats (including high-resolution MP4s and MP3 transcodes) are downloaded natively via programmatic `<a>` anchor tag click. This hits 100% Wi-Fi speed and avoids crashing the browser tab with large file buffers.
+4. **Stream Verification**: When an instance returns a download link, the client performs a lightweight `Range: bytes=0-0` GET fetch. If the instance returns an empty stream (status 200/206 with `Content-Length: 0` and missing or `-1` `Estimated-Content-Length`), it fails verification. The system automatically discards the broken instance and tries the next candidate in the pool.
+5. **Direct Server-Side Processing**: The frontend requests Cobalt to fetch, transcode, and merge the media server-side. This avoids browser CORS errors and YouTube IP bans, and eliminates client-side `ffmpeg.wasm` CPU/memory overhead.
+6. **Native Browser Download**: All formats (including high-resolution MP4s and MP3 transcodes) are downloaded natively via programmatic `<a>` anchor tag click. This hits 100% Wi-Fi speed and avoids crashing the browser tab with large file buffers.
 
 ---
 
@@ -276,6 +277,29 @@ VITE_FIREBASE_MEASUREMENT_ID
 - [x] Switched `VideoCompressor.jsx` preset from `fast` to `ultrafast` to speed up CPU transcoding times under single-threaded WASM.
 - [x] Updated `README.md` and `AI_MEMORY.md` to reflect all client-side tool paths, architecture details, and tech stack additions.
 - [x] Verified the production build compiles cleanly (`✓ built in 3.37s`).
+
+### Session 9 — Fix YouTube "Sign in to confirm you're not a bot" Error
+- [x] Rewrote `netlify/functions/download.cjs` to use `--extractor-args "youtube:player_client=ios"` which bypasses YouTube's bot-check requirement entirely.
+- [x] Added cascading player-client fallback strategy in `download.cjs`: tries `ios` → `tv_embedded` → `mweb` → `default` in sequence. Each client avoids the sign-in gate differently.
+- [x] Added mobile User-Agent header (`iPhone; CPU iPhone OS 17_0`) to the yt-dlp requests for the iOS client path.
+- [x] Added smart early-termination in `download.cjs` for definitive content errors (private, removed, unavailable) — stops retrying immediately and returns the real error.
+- [x] **Flipped the YouTube download priority in `downloader.js`**: yt-dlp backend is now tried FIRST for all YouTube URLs (the iOS client is the most reliable bypass). Cobalt public instances are now the secondary fallback.
+- [x] Updated `FALLBACK_INSTANCES` in `downloader.js` with 8 fresher Cobalt community instances (replaced the stale/broken kittycat.boo/dog/fox pool).
+- [x] Improved error mapping in `ToolPage.jsx`: raw yt-dlp multi-line error output is now parsed and mapped to clean, user-friendly single-line messages (age-restricted, private, bot-blocked, timeout, etc.).
+- [x] Verified production build compiles cleanly (`✓ built in 4.37s`).
+
+### Session 10 — Fix Download Speed (0.8 Mbps → 4–6+ Mbps)
+- [x] **Root cause identified**: `googlevideo.com` URLs from the yt-dlp backend were being downloaded via a single-connection native `<a>` anchor through the `/api/stream` edge proxy — a single proxy connection caps at ~0.8 Mbps.
+- [x] **Fixed routing in `ToolPage.jsx`**: `googlevideo.com` URLs now bypass the native anchor path and always use the parallel buffer downloader (`downloadToBuffer`). Added `isGoogleVideo` flag to routing logic.
+- [x] **Rewrote the parallel chunker in `downloader.js`**: Replaced the old "N giant equal slices, all at once" approach with a **rolling-queue** design using fixed 2 MB chunk sizes and 8 concurrent connections. Benefits:
+  - RAM stays bounded — only 8 × 2 MB = 16 MB in-flight RAM at any time (old: all of a 100 MB file split into 6 × 17 MB pieces simultaneously)
+  - Server isn't hammered with 6 enormous range requests at the same time
+  - New chunks are dispatched as old ones finish — no stall waiting for the slowest chunk
+- [x] Improved size detection fallback chain in the probe step: `Content-Range` → `Content-Length` → `Estimated-Content-Length`
+- [x] Body of 1-byte Range probe is now properly cancelled (`body.cancel()`) so the connection slot is freed immediately before parallel chunks start
+- [x] Bumped progress reporting interval from 400ms → 300ms for smoother speed display
+- [x] AbortError is now re-thrown from the chunker catch block so user cancellation propagates correctly
+- [x] Verified production build compiles cleanly (`✓ built in 3.12s`).
 
 ----
 

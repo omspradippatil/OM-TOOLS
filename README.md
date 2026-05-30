@@ -133,7 +133,7 @@ OM-TOOLS/
     │   └── LocalToolPage.css  # Styles for drag-and-drop, controls, and download cards
     │
     ├── services/
-    │   ├── downloader.js      # Cobalt API pool, stream verification, parallel chunking
+    │   ├── downloader.js      # yt-dlp backend (primary) + Cobalt API pool fallback, stream verify, parallel chunking
     │   └── ffmpegLoader.js    # ffmpeg.wasm loader (loads single-threaded core from jsDelivr)
     │
     └── pages/
@@ -197,14 +197,20 @@ OM-TOOLS/
 
 ## ⚙️ How It Works (Bypass Architecture)
 
-OM Tools utilizes a self-healing public Cobalt API pool instead of a monolithic local downloader backend:
-1. **Dynamic Instance Discovery**: Automatically queries `instances.cobalt.best` to fetch and prioritize the highest-performing public Cobalt instances. Query results and failures are cached to bypass connection timeout delays.
-2. **Dynamic Priority & Failover**: Speeds up start latency by sorting instances on the fly:
-   - **Last Known Working Server**: Prioritizes and attempts the last successful server first, starting downloads instantly in milliseconds.
-   - **Blacklist Cooldown**: Temporarily blocks recently failed servers for 3 minutes to avoid retrying offline endpoints.
-3. **Stream Verification**: Automatically performs a lightweight `Range: bytes=0-0` request on the returned download URL to verify if the server's stream contains data. This filters out faulty instances that return 0-byte corrupted streams, ensuring 100% reliable downloads.
-4. **Server-Side Transcoding**: Offloads all video merges and audio conversions (MP3) to the Cobalt server, bypassing browser memory constraints and avoiding the need for heavy client-side `ffmpeg.wasm` loads.
-5. **Native Downloads**: Directly triggers native browser file downloads (via programmatic `<a>` anchor tag clicks) to achieve 100% Wi-Fi bandwidth speed with zero browser memory overhead.
+OM Tools uses a **two-tier bypass architecture** to reliably download YouTube content even when YouTube blocks standard server-side requests:
+
+### Tier 1 — Own yt-dlp Backend (Primary for YouTube)
+1. **iOS Player Client**: The Netlify function runs `yt-dlp` with `--extractor-args "youtube:player_client=ios"`. The iOS player client is treated differently by YouTube and is **not subject to the "Sign in to confirm you're not a bot" requirement** that blocks standard browser/desktop clients.
+2. **Multi-Client Fallback**: If the iOS client is blocked, the backend automatically tries `tv_embedded` → `mweb` → `default` clients in sequence.
+3. **Stream Proxy**: Direct video/audio URLs returned by yt-dlp are routed through our Deno Edge Function (`/api/stream`) to handle CORS and IP restrictions.
+
+### Tier 2 — Public Cobalt Pool (Secondary Fallback)
+4. **Dynamic Instance Discovery**: If the yt-dlp backend fails for transient reasons, the frontend queries `instances.cobalt.best` and merges with 8 pre-verified fallback Cobalt instances. Query results and failures are cached to bypass repeated timeout delays.
+5. **Dynamic Priority & Failover**: Speeds up start latency by sorting instances on the fly:
+   - **Last Known Working Server**: Prioritizes and attempts the last successful server first.
+   - **Blacklist Cooldown**: Temporarily blocks recently failed servers for 3 minutes.
+6. **Stream Verification**: Performs a lightweight `Range: bytes=0-0` request on the returned download URL to verify the stream is non-empty before committing to a download.
+7. **Native Downloads**: Triggers native browser file downloads via programmatic `<a>` anchor tag clicks to achieve 100% Wi-Fi bandwidth with zero browser memory overhead.
 
 ---
 
