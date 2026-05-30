@@ -301,6 +301,17 @@ VITE_FIREBASE_MEASUREMENT_ID
 - [x] AbortError is now re-thrown from the chunker catch block so user cancellation propagates correctly
 - [x] Verified production build compiles cleanly (`✓ built in 3.12s`).
 
+### Session 11 — Fix All Audio/Video Editor Tools ("Processing failed")
+- [x] **Root cause identified**: `ffmpegLoader.js` was loading `@ffmpeg/core@0.12.10/dist/esm` — two bugs in one:
+  1. **Wrong version**: `@ffmpeg/core@0.12.10` does not exist on npm. The last valid version is `0.12.6`.
+  2. **Wrong build type**: The ESM (`/dist/esm`) build uses `import.meta.url` internally, which **breaks when converted to a Blob URL** via `toBlobURL()`. This caused a silent load failure on every ffmpeg.wasm tool.
+- [x] Fixed `ffmpegLoader.js` to load `@ffmpeg/core@0.12.6/dist/umd` (UMD build) which is safe in blob URL contexts and is the correct build for the `@ffmpeg/ffmpeg` v0.12.x API.
+- [x] Added **CDN fallback chain**: jsDelivr → unpkg. If jsDelivr is slow or down, unpkg takes over automatically without any error shown to the user.
+- [x] Added per-CDN error logging so developers can see which CDN succeeded in the console.
+- [x] Reset `_loadPromise` to `null` on failure so the next call retries cleanly (was already there, preserved).
+- [x] This fix affects ALL 9 client-side editor tools: AudioExtractor, AudioConverter, AudioTrimmer, VolumeBooster, VideoConverter, VideoTrimmer, VideoCompressor, VideoToGif, VideoMuter.
+- [x] Verified production build compiles cleanly (`✓ built in 3.48s`).
+
 ----
 
 ## ⚠️ Constraints (Never Change)
