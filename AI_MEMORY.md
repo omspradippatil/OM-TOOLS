@@ -85,10 +85,24 @@ OM-TOOLS/
         ├── VideoCompressor.jsx    ← ★ NEW — Compress with CRF + resolution scaling
         ├── VideoToGif.jsx         ← ★ NEW — Two-pass palette GIF generation
         ├── VideoMuter.jsx         ← ★ NEW — Strip audio track (-an flag, instant)
+        ├── VideoMerger.jsx        ← ★ NEW — Merge multiple video clips with ffmpeg concat
+        ├── VideoSpeedChanger.jsx  ← ★ NEW — 0.25×–4× speed with setpts + chained atempo
+        ├── VideoFrameExtractor.jsx← ★ NEW — Extract JPG/PNG frame at any timestamp
+        ├── VideoCropper.jsx       ← ★ NEW — Crop to 16:9/9:16/1:1/4:3 via crop vf filter
+        ├── VideoRotator.jsx       ← ★ NEW — Rotate/flip via transpose/hflip/vflip
         ├── AudioExtractor.jsx     ← ★ NEW — Extract audio to MP3/WAV/AAC/OGG
         ├── AudioConverter.jsx     ← ★ NEW — Convert audio between formats
         ├── AudioTrimmer.jsx       ← ★ NEW — Trim audio by start/end seconds
         ├── VolumeBooster.jsx      ← ★ NEW — Boost volume up to 4× with ffmpeg volume filter
+        ├── AudioMerger.jsx        ← ★ NEW — Merge audio tracks with ffmpeg concat filter
+        ├── RingtoneMaker.jsx      ← ★ NEW — Trim + afade in/out, export MP3/M4A
+        ├── AudioNormalizer.jsx    ← ★ NEW — EBU R128 loudnorm normalization
+        ├── VoiceRecorder.jsx      ← ★ NEW — Browser MediaRecorder + visualizer, no ffmpeg
+        ├── TikTokDownloader.jsx   ← ★ NEW — TikTok (Cobalt API, no watermark)
+        ├── TwitterDownloader.jsx  ← ★ NEW — Twitter/X videos & GIFs (Cobalt API)
+        ├── FacebookDownloader.jsx ← ★ NEW — Facebook public videos (Cobalt API)
+        ├── RedditDownloader.jsx   ← ★ NEW — Reddit videos with merged audio (Cobalt API)
+        ├── PinterestDownloader.jsx← ★ NEW — Pinterest video pins (Cobalt API)
         ├── NotFound.jsx
         └── NotFound.css
 
@@ -134,15 +148,29 @@ OM-TOOLS/
 | `/instagram-reel-downloader` | `ReelDownloader` | |
 | `/thumbnail-downloader` | `ThumbnailDownloader` | |
 | `/youtube-playlist-downloader` | `PlaylistDownloader` | |
+| `/tiktok-downloader`    | `TikTokDownloader`    | Cobalt API, no watermark |
+| `/twitter-downloader`   | `TwitterDownloader`   | Cobalt API |
+| `/facebook-downloader`  | `FacebookDownloader`  | Cobalt API |
+| `/reddit-downloader`    | `RedditDownloader`    | Cobalt API, audio+video merged |
+| `/pinterest-downloader` | `PinterestDownloader` | Cobalt API |
 | `/video-converter` | `VideoConverter` | ffmpeg.wasm |
-| `/video-trimmer` | `VideoTrimmer` | ffmpeg.wasm |
-| `/video-compressor` | `VideoCompressor` | ffmpeg.wasm |
-| `/video-to-gif` | `VideoToGif` | ffmpeg.wasm, 2-pass palette |
-| `/video-muter` | `VideoMuter` | ffmpeg.wasm, stream copy |
+| `/video-trimmer`   | `VideoTrimmer`   | ffmpeg.wasm |
+| `/video-compressor`| `VideoCompressor`| ffmpeg.wasm |
+| `/video-to-gif`    | `VideoToGif`     | ffmpeg.wasm, 2-pass palette |
+| `/video-muter`     | `VideoMuter`     | ffmpeg.wasm, stream copy |
+| `/video-merger`    | `VideoMerger`    | ffmpeg.wasm, concat demuxer |
+| `/video-speed-changer` | `VideoSpeedChanger` | ffmpeg.wasm, setpts+atempo |
+| `/video-frame-extractor` | `VideoFrameExtractor` | ffmpeg.wasm, -frames:v 1 |
+| `/video-cropper`   | `VideoCropper`   | ffmpeg.wasm, crop vf filter |
+| `/video-rotator`   | `VideoRotator`   | ffmpeg.wasm, transpose/flip |
 | `/audio-extractor` | `AudioExtractor` | ffmpeg.wasm |
 | `/audio-converter` | `AudioConverter` | ffmpeg.wasm |
-| `/audio-trimmer` | `AudioTrimmer` | ffmpeg.wasm |
-| `/volume-booster` | `VolumeBooster` | ffmpeg.wasm |
+| `/audio-trimmer`   | `AudioTrimmer`   | ffmpeg.wasm |
+| `/volume-booster`  | `VolumeBooster`  | ffmpeg.wasm |
+| `/audio-merger`    | `AudioMerger`    | ffmpeg.wasm, concat filter |
+| `/ringtone-maker`  | `RingtoneMaker`  | ffmpeg.wasm, afade + trim |
+| `/audio-normalizer`| `AudioNormalizer`| ffmpeg.wasm, loudnorm filter |
+| `/voice-recorder`  | `VoiceRecorder`  | Browser MediaRecorder API, no ffmpeg |
 | `*` | `NotFound` | 404 page |
 
 
@@ -311,6 +339,31 @@ VITE_FIREBASE_MEASUREMENT_ID
 - [x] Reset `_loadPromise` to `null` on failure so the next call retries cleanly (was already there, preserved).
 - [x] This fix affects ALL 9 client-side editor tools: AudioExtractor, AudioConverter, AudioTrimmer, VolumeBooster, VideoConverter, VideoTrimmer, VideoCompressor, VideoToGif, VideoMuter.
 - [x] Verified production build compiles cleanly (`✓ built in 3.48s`).
+
+### Session 12 — Add 14 New Tools (Social Downloaders + Video/Audio Editors)
+- [x] **Removed YouTube-only guard in `ToolPage.jsx`**: The `platform !== 'youtube'` condition that showed "Under Construction" for all non-YouTube platforms is gone. URL input now works for ALL platforms.
+- [x] **Added 5 Social Media Downloader pages** (all use existing Cobalt API pool):
+  - `TikTokDownloader.jsx` — `/tiktok-downloader` — watermark-free TikTok videos
+  - `TwitterDownloader.jsx` — `/twitter-downloader` — Twitter/X videos and animated GIFs
+  - `FacebookDownloader.jsx` — `/facebook-downloader` — public Facebook videos and Reels
+  - `RedditDownloader.jsx` — `/reddit-downloader` — Reddit videos with merged DASH audio+video
+  - `PinterestDownloader.jsx` — `/pinterest-downloader` — Pinterest video pins
+- [x] **Added 5 Video Editor pages** (all use `LocalToolPage.jsx` + `runFFmpeg()`):
+  - `VideoMerger.jsx` — `/video-merger` — multi-file concat demuxer, drag-to-reorder UI
+  - `VideoSpeedChanger.jsx` — `/video-speed-changer` — 0.25× to 4×, chained atempo for extremes
+  - `VideoFrameExtractor.jsx` — `/video-frame-extractor` — timestamp scrubber, JPG/PNG output
+  - `VideoCropper.jsx` — `/video-cropper` — 16:9/9:16/1:1/4:3 centered crop vf filter
+  - `VideoRotator.jsx` — `/video-rotator` — transpose/hflip/vflip options
+- [x] **Added 4 Audio Tool pages**:
+  - `AudioMerger.jsx` — `/audio-merger` — multi-file concat filter, reorder UI
+  - `RingtoneMaker.jsx` — `/ringtone-maker` — start/end trim + afade, MP3/M4A (iPhone .m4r) output
+  - `AudioNormalizer.jsx` — `/audio-normalizer` — loudnorm EBU R128 (-16 LUFS / -1.5 TP)
+  - `VoiceRecorder.jsx` — `/voice-recorder` — MediaRecorder API + frequency visualizer, no ffmpeg
+- [x] **Updated `tools.js`**: 14 new TOOLS entries, `social` category, 6 new `SUPPORTED_PLATFORMS`, `reddit` + `pinterest` added to `detectPlatform()`
+- [x] **Updated `seoData.js`**: 14 new per-page SEO entries
+- [x] **Updated `App.jsx`**: All 14 new routes wired
+- [x] **`buildDefaultFormats()` in `ToolPage.jsx`**: Format lists for tiktok, twitter, facebook, reddit, pinterest
+- [x] Verified production build compiles cleanly (`✓ built in 2.86s`).
 
 ----
 

@@ -122,5 +122,96 @@ export const SEO_DATA = {
     keywords: 'volume booster online free, boost audio volume, increase mp3 volume, audio volume increaser, louder audio online',
     url: 'https://om-tools.netlify.app/volume-booster',
   },
+
+  // ── Social Media Downloaders ──
+  'tiktok-downloader': {
+    title: 'TikTok Video Downloader — Download Without Watermark | OM Tools',
+    description: 'Download TikTok videos without watermark in HD quality. No sign-up, completely free. Works on all devices.',
+    keywords: 'tiktok downloader, download tiktok video without watermark, save tiktok video, tiktok to mp4, tiktok video download',
+    url: 'https://om-tools.netlify.app/tiktok-downloader',
+  },
+  'twitter-downloader': {
+    title: 'Twitter / X Video Downloader — Download Tweets & GIFs | OM Tools',
+    description: 'Download Twitter and X videos, GIFs and clips in HD quality. Free, instant, no account needed.',
+    keywords: 'twitter video downloader, x video downloader, download tweet video, save twitter video, twitter gif downloader',
+    url: 'https://om-tools.netlify.app/twitter-downloader',
+  },
+  'facebook-downloader': {
+    title: 'Facebook Video Downloader — Download FB Videos Free | OM Tools',
+    description: 'Download Facebook videos in HD or SD quality from posts, reels, and Watch. Free, no login required.',
+    keywords: 'facebook video downloader, download facebook video, save fb video, facebook reel downloader, fb video download',
+    url: 'https://om-tools.netlify.app/facebook-downloader',
+  },
+  'reddit-downloader': {
+    title: 'Reddit Video Downloader — Download Reddit Videos with Audio | OM Tools',
+    description: 'Download Reddit videos with audio properly merged. Supports all subreddits, HD quality, completely free.',
+    keywords: 'reddit video downloader, download reddit video with audio, save reddit video, reddit mp4 download, reddit video save',
+    url: 'https://om-tools.netlify.app/reddit-downloader',
+  },
+  'pinterest-downloader': {
+    title: 'Pinterest Video Downloader — Download Pinterest Videos Free | OM Tools',
+    description: 'Download Pinterest video pins and GIFs in full quality. Free, instant, no watermark, no account needed.',
+    keywords: 'pinterest video downloader, download pinterest video, save pinterest video, pinterest gif download, pinterest pin video',
+    url: 'https://om-tools.netlify.app/pinterest-downloader',
+  },
+
+  // ── New Video Editors ──
+  'video-merger': {
+    title: 'Free Video Merger — Join Multiple Videos Online | OM Tools',
+    description: 'Merge multiple video clips into one seamlessly. Fast lossless concatenation, 100% in your browser. No upload.',
+    keywords: 'video merger online free, join videos together, combine mp4 files, video joiner, merge videos browser',
+    url: 'https://om-tools.netlify.app/video-merger',
+  },
+  'video-speed-changer': {
+    title: 'Free Video Speed Changer — Slow Motion & Fast Forward | OM Tools',
+    description: 'Speed up or slow down any video from 0.25× to 4×. Audio pitch correction included. 100% in-browser, no upload.',
+    keywords: 'video speed changer online free, slow motion video maker, speed up video, change video speed, fast forward video browser',
+    url: 'https://om-tools.netlify.app/video-speed-changer',
+  },
+  'video-frame-extractor': {
+    title: 'Free Video Frame Extractor — Screenshot from Video | OM Tools',
+    description: 'Extract any frame from a video as a high-quality JPG or PNG screenshot. Set any timestamp. 100% in-browser.',
+    keywords: 'video frame extractor online free, screenshot from video, extract frame from mp4, video to image, video screenshot tool',
+    url: 'https://om-tools.netlify.app/video-frame-extractor',
+  },
+  'video-cropper': {
+    title: 'Free Video Cropper — Change Aspect Ratio Online | OM Tools',
+    description: 'Crop videos to 16:9, 9:16, 1:1, 4:3 for YouTube, Reels, TikTok. 100% in-browser, no upload required.',
+    keywords: 'video cropper online free, change video aspect ratio, crop mp4 online, 9:16 video crop, vertical video maker, crop video browser',
+    url: 'https://om-tools.netlify.app/video-cropper',
+  },
+  'video-rotator': {
+    title: 'Free Video Rotator & Flipper — Rotate Video Online | OM Tools',
+    description: 'Rotate videos 90°, 180°, 270° or flip horizontally/vertically. Fix portrait/landscape issues. 100% in-browser.',
+    keywords: 'video rotator online free, rotate video 90 degrees, flip video horizontally, rotate mp4 online, fix video orientation',
+    url: 'https://om-tools.netlify.app/video-rotator',
+  },
+
+  // ── New Audio Tools ──
+  'audio-merger': {
+    title: 'Free Audio Merger — Join Multiple Audio Files Online | OM Tools',
+    description: 'Merge multiple MP3, WAV, or OGG audio files into one. Fast, 100% in-browser, no upload required.',
+    keywords: 'audio merger online free, join audio files, combine mp3, merge audio tracks, audio joiner browser',
+    url: 'https://om-tools.netlify.app/audio-merger',
+  },
+  'ringtone-maker': {
+    title: 'Free Ringtone Maker — Trim Audio with Fade Effects | OM Tools',
+    description: 'Create ringtones by trimming audio with fade in/out effects. Export as MP3 or M4R (iPhone). 100% in-browser.',
+    keywords: 'ringtone maker online free, make ringtone from mp3, iphone ringtone maker, m4r maker, audio trim fade online',
+    url: 'https://om-tools.netlify.app/ringtone-maker',
+  },
+  'audio-normalizer': {
+    title: 'Free Audio Normalizer — Auto-Level Audio Volume | OM Tools',
+    description: 'Normalize audio to standard broadcast loudness (EBU R128). Fix volume spikes instantly. 100% in-browser.',
+    keywords: 'audio normalizer online free, normalize mp3 volume, auto level audio, audio loudness normalization, fix audio volume browser',
+    url: 'https://om-tools.netlify.app/audio-normalizer',
+  },
+  'voice-recorder': {
+    title: 'Free Online Voice Recorder — Record & Download Audio | OM Tools',
+    description: 'Record audio from your microphone directly in the browser. Play back instantly and download as MP3 or WAV. Free.',
+    keywords: 'online voice recorder free, record audio browser, microphone recorder online, record voice download, browser audio recorder',
+    url: 'https://om-tools.netlify.app/voice-recorder',
+  },
 };
+
 

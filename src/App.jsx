@@ -14,6 +14,13 @@ import ReelDownloader      from './pages/ReelDownloader.jsx';
 import ThumbnailDownloader from './pages/ThumbnailDownloader.jsx';
 import PlaylistDownloader  from './pages/PlaylistDownloader.jsx';
 
+// ── Social Media Downloaders ──
+import TikTokDownloader   from './pages/TikTokDownloader.jsx';
+import TwitterDownloader  from './pages/TwitterDownloader.jsx';
+import FacebookDownloader from './pages/FacebookDownloader.jsx';
+import RedditDownloader   from './pages/RedditDownloader.jsx';
+import PinterestDownloader from './pages/PinterestDownloader.jsx';
+
 // ── Video & Audio Editor (ffmpeg.wasm) ──
 import VideoConverter  from './pages/VideoConverter.jsx';
 import VideoTrimmer    from './pages/VideoTrimmer.jsx';
@@ -24,6 +31,19 @@ import AudioExtractor  from './pages/AudioExtractor.jsx';
 import AudioConverter  from './pages/AudioConverter.jsx';
 import AudioTrimmer    from './pages/AudioTrimmer.jsx';
 import VolumeBooster   from './pages/VolumeBooster.jsx';
+
+// ── New Video Editors ──
+import VideoMerger       from './pages/VideoMerger.jsx';
+import VideoSpeedChanger from './pages/VideoSpeedChanger.jsx';
+import VideoFrameExtractor from './pages/VideoFrameExtractor.jsx';
+import VideoCropper      from './pages/VideoCropper.jsx';
+import VideoRotator      from './pages/VideoRotator.jsx';
+
+// ── New Audio Tools ──
+import AudioMerger    from './pages/AudioMerger.jsx';
+import RingtoneMaker  from './pages/RingtoneMaker.jsx';
+import AudioNormalizer from './pages/AudioNormalizer.jsx';
+import VoiceRecorder  from './pages/VoiceRecorder.jsx';
 
 import NotFound from './pages/NotFound.jsx';
 
@@ -44,6 +64,13 @@ function AppLayout() {
         <Route path="/thumbnail-downloader"           element={<ThumbnailDownloader />} />
         <Route path="/youtube-playlist-downloader"    element={<PlaylistDownloader />} />
 
+        {/* Social Media Downloaders */}
+        <Route path="/tiktok-downloader"   element={<TikTokDownloader />} />
+        <Route path="/twitter-downloader"  element={<TwitterDownloader />} />
+        <Route path="/facebook-downloader" element={<FacebookDownloader />} />
+        <Route path="/reddit-downloader"   element={<RedditDownloader />} />
+        <Route path="/pinterest-downloader" element={<PinterestDownloader />} />
+
         {/* Video & Audio Editor */}
         <Route path="/video-converter"   element={<VideoConverter />} />
         <Route path="/video-trimmer"     element={<VideoTrimmer />} />
@@ -54,6 +81,19 @@ function AppLayout() {
         <Route path="/audio-converter"   element={<AudioConverter />} />
         <Route path="/audio-trimmer"     element={<AudioTrimmer />} />
         <Route path="/volume-booster"    element={<VolumeBooster />} />
+
+        {/* New Video Editors */}
+        <Route path="/video-merger"         element={<VideoMerger />} />
+        <Route path="/video-speed-changer"  element={<VideoSpeedChanger />} />
+        <Route path="/video-frame-extractor" element={<VideoFrameExtractor />} />
+        <Route path="/video-cropper"        element={<VideoCropper />} />
+        <Route path="/video-rotator"        element={<VideoRotator />} />
+
+        {/* New Audio Tools */}
+        <Route path="/audio-merger"     element={<AudioMerger />} />
+        <Route path="/ringtone-maker"   element={<RingtoneMaker />} />
+        <Route path="/audio-normalizer" element={<AudioNormalizer />} />
+        <Route path="/voice-recorder"   element={<VoiceRecorder />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

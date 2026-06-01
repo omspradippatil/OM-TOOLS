@@ -429,28 +429,20 @@ export default function ToolPage({
               <h1 className="tool-hero__title">{title}</h1>
               <p className="tool-hero__subtitle">{subtitle}</p>
 
-              {platform !== 'youtube' ? (
-                <div className="tool-hero__coming-soon">
-                  <h3><span aria-hidden="true">🚧</span> Under Construction</h3>
-                  <p>Our raw downloader for {platform ? platform.charAt(0).toUpperCase() + platform.slice(1) : 'this platform'} is currently being built.</p>
-                  <Link to="/youtube-video-downloader" className="btn btn-outline btn-sm">Try YouTube Downloader</Link>
-                </div>
-              ) : (
-                <div className="tool-hero__input">
-                  <UrlInput
-                    placeholder={inputPlaceholder || 'Paste URL here...'}
-                    autoNavigate={false}
-                    value={urlVal}
-                    onValueChange={setUrlVal}
-                    onFetch={handleFetch}
-                  />
-                  {loading && (
-                    <p className="tool-hero__analyzing">
-                      <span className="spinner" aria-hidden="true" /> Analyzing URL...
-                    </p>
-                  )}
-                </div>
-              )}
+              <div className="tool-hero__input">
+                <UrlInput
+                  placeholder={inputPlaceholder || 'Paste URL here...'}
+                  autoNavigate={false}
+                  value={urlVal}
+                  onValueChange={setUrlVal}
+                  onFetch={handleFetch}
+                />
+                {loading && (
+                  <p className="tool-hero__analyzing">
+                    <span className="spinner" aria-hidden="true" /> Analyzing URL...
+                  </p>
+                )}
+              </div>
 
               {supportedTypes && (
                 <div className="tool-hero__tags">
@@ -560,6 +552,45 @@ function buildDefaultFormats(platform, type, isAudio, isThumbnail) {
     ];
   }
   // Instagram / others
+  if (platform === 'instagram') {
+    return [
+      { id: 'mp4-hd', label: 'MP4', quality: 'HD Original', size: '~20 MB' },
+      { id: 'mp4-sd', label: 'MP4', quality: 'SD',          size: '~8 MB'  },
+    ];
+  }
+  if (platform === 'tiktok') {
+    return [
+      { id: 'mp4-hd',    label: 'MP4', quality: 'No Watermark HD', size: '~15 MB' },
+      { id: 'mp4-sd',    label: 'MP4', quality: 'No Watermark SD', size: '~5 MB'  },
+      { id: 'mp3-320',   label: 'MP3', quality: '320 kbps (Audio)', size: '~5 MB' },
+    ];
+  }
+  if (platform === 'twitter') {
+    return [
+      { id: 'mp4-1080', label: 'MP4', quality: '1080p HD', size: '~30 MB' },
+      { id: 'mp4-720',  label: 'MP4', quality: '720p',     size: '~15 MB' },
+      { id: 'mp4-480',  label: 'MP4', quality: '480p',     size: '~8 MB'  },
+    ];
+  }
+  if (platform === 'facebook') {
+    return [
+      { id: 'mp4-hd', label: 'MP4', quality: 'HD Quality', size: '~50 MB' },
+      { id: 'mp4-sd', label: 'MP4', quality: 'SD Quality', size: '~15 MB' },
+    ];
+  }
+  if (platform === 'reddit') {
+    return [
+      { id: 'mp4-hd', label: 'MP4', quality: 'HD (Audio+Video)', size: '~30 MB' },
+      { id: 'mp4-sd', label: 'MP4', quality: 'SD (Audio+Video)', size: '~10 MB' },
+    ];
+  }
+  if (platform === 'pinterest') {
+    return [
+      { id: 'mp4-hd', label: 'MP4', quality: 'HD Original', size: '~20 MB' },
+      { id: 'mp4-sd', label: 'MP4', quality: 'SD',          size: '~5 MB'  },
+    ];
+  }
+  // Generic fallback
   return [
     { id: 'mp4-hd', label: 'MP4', quality: 'HD Original', size: '~20 MB' },
     { id: 'mp4-sd', label: 'MP4', quality: 'SD',          size: '~8 MB'  },
