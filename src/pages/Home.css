@@ -320,6 +320,25 @@
   transform: translateX(0);
 }
 
+/* ── Image Tool Card Accents ── */
+.tool-card--image .tool-card__glow {
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.15) 0%, transparent 70%);
+}
+
+.tool-card--image:hover {
+  border-color: rgba(20, 184, 166, 0.35);
+  box-shadow: 0 10px 30px -10px rgba(20, 184, 166, 0.15);
+}
+
+.tool-card--image .tool-card__arrow,
+.tool-card--image .tool-card__format {
+  color: var(--teal, #14B8A6);
+}
+
+.tool-card--image .tool-card__format {
+  background: rgba(20, 184, 166, 0.1);
+}
+
 /* ── Platforms ── */
 .platforms-section { background: var(--bg-card); }
 

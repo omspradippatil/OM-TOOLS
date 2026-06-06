@@ -98,8 +98,13 @@ function FAQItem({ q, a, index }) {
 
 /* ── Tool Card ── */
 function ToolCard({ tool }) {
+  const isImage = tool.category === 'image';
   return (
-    <Link to={tool.slug} className="tool-card" aria-label={tool.name}>
+    <Link 
+      to={tool.slug} 
+      className={`tool-card${isImage ? ' tool-card--image' : ''}`} 
+      aria-label={tool.name}
+    >
       <div className="tool-card__glow" aria-hidden="true" />
       <div className="tool-card__header">
         <span className="tool-card__icon" aria-hidden="true">{tool.emoji}</span>
@@ -274,12 +279,32 @@ export default function Home() {
               ))}
             </div>
 
+            {/* Social Media Downloaders */}
+            <p className="tools-category-label" style={{ marginTop: '3rem' }}>
+              👥 Social Media Downloaders
+            </p>
+            <div className="tools-grid">
+              {TOOLS.filter(t => t.category === 'social').map((tool) => (
+                <ToolCard key={tool.id} tool={tool} />
+              ))}
+            </div>
+
             {/* Video & Audio Editor */}
-            <p className="tools-category-label" style={{ marginTop: '2.5rem' }}>
+            <p className="tools-category-label" style={{ marginTop: '3rem' }}>
               🔒 Video &amp; Audio Editor <span className="badge badge-success" style={{ fontSize: '0.7rem', verticalAlign: 'middle' }}>100% Local</span>
             </p>
             <div className="tools-grid">
               {TOOLS.filter(t => t.category === 'editor').map((tool) => (
+                <ToolCard key={tool.id} tool={tool} />
+              ))}
+            </div>
+
+            {/* Image Tools */}
+            <p className="tools-category-label" style={{ marginTop: '3rem' }}>
+              🖼️ Image Tools <span className="badge badge-success" style={{ fontSize: '0.7rem', verticalAlign: 'middle', background: '#14B8A6', color: '#fff' }}>100% Local</span>
+            </p>
+            <div className="tools-grid">
+              {TOOLS.filter(t => t.category === 'image').map((tool) => (
                 <ToolCard key={tool.id} tool={tool} />
               ))}
             </div>

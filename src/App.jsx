@@ -3,6 +3,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './context/AuthContext.jsx';
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
+import ScrollToTop from './components/ScrollToTop.jsx';
 
 // ── Media Downloaders ──
 import Home                from './pages/Home.jsx';
@@ -44,6 +45,13 @@ import AudioMerger    from './pages/AudioMerger.jsx';
 import RingtoneMaker  from './pages/RingtoneMaker.jsx';
 import AudioNormalizer from './pages/AudioNormalizer.jsx';
 import VoiceRecorder  from './pages/VoiceRecorder.jsx';
+
+// ── Image Tools ──
+import ImageCompressor  from './pages/ImageCompressor.jsx';
+import ImageResizer     from './pages/ImageResizer.jsx';
+import ImageConverter   from './pages/ImageConverter.jsx';
+import ImageCropper     from './pages/ImageCropper.jsx';
+import BulkImageResizer from './pages/BulkImageResizer.jsx';
 
 import NotFound from './pages/NotFound.jsx';
 
@@ -95,6 +103,13 @@ function AppLayout() {
         <Route path="/audio-normalizer" element={<AudioNormalizer />} />
         <Route path="/voice-recorder"   element={<VoiceRecorder />} />
 
+        {/* Image Tools */}
+        <Route path="/image-compressor"  element={<ImageCompressor />} />
+        <Route path="/image-resizer"     element={<ImageResizer />} />
+        <Route path="/image-converter"   element={<ImageConverter />} />
+        <Route path="/image-cropper"     element={<ImageCropper />} />
+        <Route path="/bulk-image-resizer" element={<BulkImageResizer />} />
+
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Footer />
@@ -105,6 +120,7 @@ function AppLayout() {
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AuthProvider>
         <AppLayout />
       </AuthProvider>

@@ -42,24 +42,7 @@ export const SEO_DATA = {
     keywords: 'youtube thumbnail downloader, download youtube thumbnail, get youtube thumbnail, thumbnail extractor',
     url: 'https://om-tools.netlify.app/thumbnail-downloader',
   },
-  'merge-pdf': {
-    title: 'Merge PDF Free Online — Combine PDFs Offline | OM Tools',
-    description: 'Merge multiple PDF files into one document. Works entirely in your browser — no upload needed, 100% private.',
-    keywords: 'merge pdf, combine pdf online free, pdf merger, join pdf files',
-    url: 'https://om-tools.netlify.app/merge-pdf',
-  },
-  'compress-pdf': {
-    title: 'Compress PDF Online Free — Reduce PDF Size | OM Tools',
-    description: 'Reduce PDF file size while preserving quality. Runs locally in your browser — no server upload.',
-    keywords: 'compress pdf, reduce pdf size, shrink pdf, pdf compressor online free',
-    url: 'https://om-tools.netlify.app/compress-pdf',
-  },
-  'image-compressor': {
-    title: 'Image Compressor Free — Compress JPG PNG WebP Offline | OM Tools',
-    description: 'Compress images without quality loss. Supports JPG, PNG, WebP. All processing in your browser.',
-    keywords: 'image compressor, compress jpg online, reduce image size, compress png free',
-    url: 'https://om-tools.netlify.app/image-compressor',
-  },
+
   'youtube-playlist-downloader': {
     title: 'YouTube Playlist Downloader Free — Save Video/MP3 in ZIP | OM Tools',
     description: 'Download full YouTube playlists as MP4 videos or MP3 audio in a single ZIP file. Free, on-device zipping, works on all devices.',
@@ -211,6 +194,38 @@ export const SEO_DATA = {
     description: 'Record audio from your microphone directly in the browser. Play back instantly and download as MP3 or WAV. Free.',
     keywords: 'online voice recorder free, record audio browser, microphone recorder online, record voice download, browser audio recorder',
     url: 'https://om-tools.netlify.app/voice-recorder',
+  },
+
+  // ── Image Tools ──
+  'image-compressor': {
+    title: 'Free Image Compressor Online — Reduce JPG PNG WebP Size | OM Tools',
+    description: 'Compress JPG, PNG and WebP images in your browser. Before/after comparison, quality slider, reduce file size by up to 90%. 100% free, no upload.',
+    keywords: 'image compressor online free, compress jpg online, reduce image size, png compressor, webp compressor, compress photo free, image size reducer',
+    url: 'https://om-tools.netlify.app/image-compressor',
+  },
+  'image-resizer': {
+    title: 'Free Image Resizer Online — Resize to Any Dimension | OM Tools',
+    description: 'Resize images to custom dimensions or presets like 256×94, 1920×1080, 1080×1080. Aspect ratio lock, fit modes. JPG, PNG, WebP output. No upload.',
+    keywords: 'image resizer online free, resize image to specific size, resize photo online, image resize pixels, bulk image resize, 1920x1080 resize, 256x94',
+    url: 'https://om-tools.netlify.app/image-resizer',
+  },
+  'image-converter': {
+    title: 'Free Image Converter Online — Convert JPG PNG WebP AVIF | OM Tools',
+    description: 'Convert images between JPG, PNG, WebP, and AVIF formats. Quality control, transparency support. 100% free, no upload needed.',
+    keywords: 'image converter online free, jpg to png, png to webp, convert image format online, jpg to webp converter, avif converter, image format converter',
+    url: 'https://om-tools.netlify.app/image-converter',
+  },
+  'image-cropper': {
+    title: 'Free Image Cropper Online — Crop Images Visually | OM Tools',
+    description: 'Crop images online with drag-to-select. Aspect ratio presets: 1:1, 16:9, 9:16, 4:3. Export as JPG, PNG or WebP. 100% free, no upload.',
+    keywords: 'image cropper online free, crop photo online, crop image to specific ratio, crop 16:9, crop square, crop jpg online, online photo cropper free',
+    url: 'https://om-tools.netlify.app/image-cropper',
+  },
+  'bulk-image-resizer': {
+    title: 'Free Bulk Image Resizer — Resize Multiple Images at Once | OM Tools',
+    description: 'Resize up to 20 images at once in your browser. Download all as a single ZIP file. No upload, no sign-up, 100% free.',
+    keywords: 'bulk image resizer free, resize multiple images online, batch image resize, resize all images at once, bulk photo resize download zip',
+    url: 'https://om-tools.netlify.app/bulk-image-resizer',
   },
 };
 

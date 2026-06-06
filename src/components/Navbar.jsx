@@ -9,18 +9,43 @@ const DOWNLOADER_MENU = [
   { label: 'YouTube to MP3',       to: '/youtube-mp3-converter',         icon: '🎵', desc: '320kbps audio' },
   { label: 'Shorts Downloader',    to: '/shorts-downloader',             icon: '⚡', desc: 'HD vertical video' },
   { label: 'Playlist Downloader',  to: '/youtube-playlist-downloader',   icon: '📂', desc: 'Save full playlist in ZIP' },
+  { label: 'TikTok Downloader',    to: '/tiktok-downloader',             icon: '📱', desc: 'No watermark video' },
+  { label: 'Twitter / X Downloader', to: '/twitter-downloader',            icon: '🐦', desc: 'Save tweets & GIFs' },
+  { label: 'Facebook Downloader',  to: '/facebook-downloader',           icon: '👤', desc: 'Download FB videos' },
+  { label: 'Reddit Downloader',    to: '/reddit-downloader',             icon: '🤖', desc: 'Videos with audio' },
+  { label: 'Pinterest Downloader', to: '/pinterest-downloader',          icon: '📌', desc: 'Video pins & GIFs' },
 ];
 
-const EDITOR_MENU = [
+const VIDEO_MENU = [
   { label: 'Video Converter',   to: '/video-converter',   icon: '🔄', desc: 'MP4 ↔ WEBM ↔ MKV' },
   { label: 'Video Trimmer',     to: '/video-trimmer',     icon: '✂️', desc: 'Cut any video clip' },
-  { label: 'Video Compressor',  to: '/video-compressor',  icon: '🗜️', desc: 'Shrink for WhatsApp' },
-  { label: 'Video to GIF',      to: '/video-to-gif',      icon: '🎞️', desc: 'Animated GIF maker' },
+  { label: 'Video Compressor',  to: '/video-compressor',  icon: '🗜️', desc: 'Shrink file size' },
+  { label: 'Video to GIF',      to: '/video-to-gif',      icon: '🎞️', desc: 'Make animated GIFs' },
   { label: 'Video Muter',       to: '/video-muter',       icon: '🔇', desc: 'Remove audio track' },
-  { label: 'Audio Extractor',   to: '/audio-extractor',   icon: '🎵', desc: 'MP3/WAV from video' },
+  { label: 'Video Merger',      to: '/video-merger',      icon: '🔗', desc: 'Combine video clips' },
+  { label: 'Video Speed',       to: '/video-speed-changer',icon: '⏩', desc: 'Slow & fast motion' },
+  { label: 'Frame Extractor',   to: '/video-frame-extractor',icon: '🖼️', desc: 'Extract JPG/PNG frames' },
+  { label: 'Video Cropper',     to: '/video-cropper',     icon: '✂️', desc: 'Crop aspect ratio' },
+  { label: 'Video Rotator',     to: '/video-rotator',     icon: '🔃', desc: 'Rotate & flip video' },
+];
+
+const AUDIO_MENU = [
+  { label: 'Audio Extractor',   to: '/audio-extractor',   icon: '🎵', desc: 'Get MP3 from video' },
   { label: 'Audio Converter',   to: '/audio-converter',   icon: '🎶', desc: 'MP3 WAV FLAC OGG' },
   { label: 'Audio Trimmer',     to: '/audio-trimmer',     icon: '✂️', desc: 'Cut audio files' },
-  { label: 'Volume Booster',    to: '/volume-booster',    icon: '🔊', desc: 'Boost up to 4×' },
+  { label: 'Volume Booster',    to: '/volume-booster',    icon: '🔊', desc: 'Boost volume up to 4×' },
+  { label: 'Audio Merger',      to: '/audio-merger',      icon: '🔗', desc: 'Combine audio tracks' },
+  { label: 'Ringtone Maker',    to: '/ringtone-maker',    icon: '🔔', desc: 'Trim + fade transitions' },
+  { label: 'Audio Normalizer',  to: '/audio-normalizer',  icon: '📊', desc: 'Loudness auto-level' },
+  { label: 'Voice Recorder',    to: '/voice-recorder',    icon: '🎙️', desc: 'Browser mic recorder' },
+];
+
+const IMAGE_MENU = [
+  { label: 'Image Compressor',  to: '/image-compressor',  icon: '🗜️', desc: 'Reduce file size 90%' },
+  { label: 'Image Resizer',     to: '/image-resizer',     icon: '📐', desc: 'Resize dimensions' },
+  { label: 'Image Converter',   to: '/image-converter',   icon: '🔄', desc: 'JPG PNG WebP AVIF' },
+  { label: 'Image Cropper',     to: '/image-cropper',     icon: '✂️', desc: 'Visually crop images' },
+  { label: 'Bulk Resizer',      to: '/bulk-image-resizer',icon: '📦', desc: 'Batch resize to ZIP' },
 ];
 
 
@@ -31,12 +56,17 @@ export default function Navbar() {
   const [scrolled, setScrolled]   = useState(false);
   const [showAuth, setShowAuth]   = useState(false);
   const [userOpen, setUserOpen]   = useState(false);
+  const [activeMobileSection, setActiveMobileSection] = useState(null);
   const location = useLocation();
   const menuRef  = useRef(null);
   const userRef  = useRef(null);
 
+  const toggleMobileSection = (section) => {
+    setActiveMobileSection(current => current === section ? null : section);
+  };
+
   // Close everything on route change
-  useEffect(() => { setMenuOpen(false); setMobileOpen(false); setUserOpen(false); }, [location.pathname]);
+  useEffect(() => { setMenuOpen(false); setMobileOpen(false); setUserOpen(false); setActiveMobileSection(null); }, [location.pathname]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -92,33 +122,74 @@ export default function Navbar() {
 
               {menuOpen && (
                 <div className="nav__mega" role="menu">
-                  <p className="nav__mega-label">Media Downloaders</p>
-                  <div className="nav__mega-grid">
-                    {DOWNLOADER_MENU.map(t => (
-                      <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__mega-item${isActive ? ' active' : ''}`} role="menuitem">
-                        <span className="nav__mega-icon" aria-hidden="true">{t.icon}</span>
-                        <span>
-                          <span className="nav__mega-name">{t.label}</span>
-                          <span className="nav__mega-desc">{t.desc}</span>
-                        </span>
-                      </NavLink>
-                    ))}
+                  <div className="nav__mega-cols">
+                    {/* Column 1: Downloaders */}
+                    <div className="nav__mega-col">
+                      <p className="nav__mega-label">📥 Media &amp; Social</p>
+                      <div className="nav__mega-list">
+                        {DOWNLOADER_MENU.map(t => (
+                          <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__mega-item${isActive ? ' active' : ''}`} role="menuitem">
+                            <span className="nav__mega-icon" aria-hidden="true">{t.icon}</span>
+                            <span>
+                              <span className="nav__mega-name">{t.label}</span>
+                              <span className="nav__mega-desc">{t.desc}</span>
+                            </span>
+                          </NavLink>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Column 2: Video Editors */}
+                    <div className="nav__mega-col">
+                      <p className="nav__mega-label">🎥 Video Editors</p>
+                      <div className="nav__mega-list">
+                        {VIDEO_MENU.map(t => (
+                          <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__mega-item${isActive ? ' active' : ''}`} role="menuitem">
+                            <span className="nav__mega-icon" aria-hidden="true">{t.icon}</span>
+                            <span>
+                              <span className="nav__mega-name">{t.label}</span>
+                              <span className="nav__mega-desc">{t.desc}</span>
+                            </span>
+                          </NavLink>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Column 3: Audio Tools */}
+                    <div className="nav__mega-col">
+                      <p className="nav__mega-label">🎵 Audio Tools</p>
+                      <div className="nav__mega-list">
+                        {AUDIO_MENU.map(t => (
+                          <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__mega-item${isActive ? ' active' : ''}`} role="menuitem">
+                            <span className="nav__mega-icon" aria-hidden="true">{t.icon}</span>
+                            <span>
+                              <span className="nav__mega-name">{t.label}</span>
+                              <span className="nav__mega-desc">{t.desc}</span>
+                            </span>
+                          </NavLink>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Column 4: Image Tools */}
+                    <div className="nav__mega-col">
+                      <p className="nav__mega-label" style={{ color: '#14B8A6' }}>🖼️ Image Tools</p>
+                      <div className="nav__mega-list">
+                        {IMAGE_MENU.map(t => (
+                          <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__mega-item${isActive ? ' active' : ''} nav__mega-item--image`} role="menuitem">
+                            <span className="nav__mega-icon" aria-hidden="true">{t.icon}</span>
+                            <span>
+                              <span className="nav__mega-name">{t.label}</span>
+                              <span className="nav__mega-desc">{t.desc}</span>
+                            </span>
+                          </NavLink>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <div className="nav__mega-divider" aria-hidden="true" />
-                  <p className="nav__mega-label">🔒 Video &amp; Audio Editor <span className="badge badge-new" style={{fontSize:'0.65rem',padding:'0.15rem 0.5rem',verticalAlign:'middle'}}>Local</span></p>
-                  <div className="nav__mega-grid nav__mega-grid--wide">
-                    {EDITOR_MENU.map(t => (
-                      <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__mega-item${isActive ? ' active' : ''}`} role="menuitem">
-                        <span className="nav__mega-icon" aria-hidden="true">{t.icon}</span>
-                        <span>
-                          <span className="nav__mega-name">{t.label}</span>
-                          <span className="nav__mega-desc">{t.desc}</span>
-                        </span>
-                      </NavLink>
-                    ))}
-                  </div>
+
                   <div className="nav__mega-footer">
-                    <span>🔒 On-device processing · No upload · 100% private · Free forever</span>
+                    <span>🔒 Local processing (Video/Audio/Image) · No upload · 100% private · Free forever</span>
                   </div>
                 </div>
               )}
@@ -172,29 +243,100 @@ export default function Navbar() {
         {/* ── Mobile drawer ── */}
         {mobileOpen && (
           <div className="nav__drawer">
-            <p className="nav__drawer-label">Media Downloaders</p>
-            {DOWNLOADER_MENU.map(t => (
-              <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__drawer-link${isActive ? ' active' : ''}`}>
-                <span aria-hidden="true">{t.icon}</span>
-                {t.label}
-              </NavLink>
-            ))}
-            <p className="nav__drawer-label" style={{marginTop:'1rem'}}>🔒 Video &amp; Audio Editor</p>
-            {EDITOR_MENU.map(t => (
-              <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__drawer-link${isActive ? ' active' : ''}`}>
-                <span aria-hidden="true">{t.icon}</span>
-                {t.label}
-              </NavLink>
-            ))}
-            <a href="https://om-pdf.netlify.app" target="_blank" rel="noopener noreferrer" className="nav__drawer-link">
+            {/* Section 1: Downloaders */}
+            <div className="nav__drawer-sec">
+              <button 
+                className={`nav__drawer-trigger${activeMobileSection === 'media' ? ' open' : ''}`}
+                onClick={() => toggleMobileSection('media')}
+              >
+                <span>📥 Media &amp; Social</span>
+                <span className="nav__drawer-arrow">{activeMobileSection === 'media' ? '−' : '+'}</span>
+              </button>
+              {activeMobileSection === 'media' && (
+                <div className="nav__drawer-coll">
+                  {DOWNLOADER_MENU.map(t => (
+                    <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__drawer-link${isActive ? ' active' : ''}`}>
+                      <span aria-hidden="true">{t.icon}</span>
+                      {t.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Section 2: Video Editors */}
+            <div className="nav__drawer-sec">
+              <button 
+                className={`nav__drawer-trigger${activeMobileSection === 'video' ? ' open' : ''}`}
+                onClick={() => toggleMobileSection('video')}
+              >
+                <span>🎥 Video Editors</span>
+                <span className="nav__drawer-arrow">{activeMobileSection === 'video' ? '−' : '+'}</span>
+              </button>
+              {activeMobileSection === 'video' && (
+                <div className="nav__drawer-coll">
+                  {VIDEO_MENU.map(t => (
+                    <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__drawer-link${isActive ? ' active' : ''}`}>
+                      <span aria-hidden="true">{t.icon}</span>
+                      {t.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Section 3: Audio Tools */}
+            <div className="nav__drawer-sec">
+              <button 
+                className={`nav__drawer-trigger${activeMobileSection === 'audio' ? ' open' : ''}`}
+                onClick={() => toggleMobileSection('audio')}
+              >
+                <span>🎵 Audio Tools</span>
+                <span className="nav__drawer-arrow">{activeMobileSection === 'audio' ? '−' : '+'}</span>
+              </button>
+              {activeMobileSection === 'audio' && (
+                <div className="nav__drawer-coll">
+                  {AUDIO_MENU.map(t => (
+                    <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__drawer-link${isActive ? ' active' : ''}`}>
+                      <span aria-hidden="true">{t.icon}</span>
+                      {t.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Section 4: Image Tools */}
+            <div className="nav__drawer-sec">
+              <button 
+                className={`nav__drawer-trigger${activeMobileSection === 'image' ? ' open' : ''}`}
+                onClick={() => toggleMobileSection('image')}
+              >
+                <span style={{ color: '#14B8A6' }}>🖼️ Image Tools</span>
+                <span className="nav__drawer-arrow" style={{ color: '#14B8A6' }}>{activeMobileSection === 'image' ? '−' : '+'}</span>
+              </button>
+              {activeMobileSection === 'image' && (
+                <div className="nav__drawer-coll">
+                  {IMAGE_MENU.map(t => (
+                    <NavLink key={t.to} to={t.to} className={({ isActive }) => `nav__drawer-link nav__drawer-link--image${isActive ? ' active' : ''}`}>
+                      <span aria-hidden="true">{t.icon}</span>
+                      {t.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <a href="https://om-pdf.netlify.app" target="_blank" rel="noopener noreferrer" className="nav__drawer-link nav__drawer-link--pdf">
               <span aria-hidden="true">📄</span> OM PDF — PDF Tools ↗
             </a>
+            
             <div className="nav__drawer-foot">
               {user
-                ? <button className="btn btn-outline" style={{width:'100%', justifyContent:'center'}} onClick={logout}>Sign out</button>
-                : <button className="btn btn-outline" style={{width:'100%', justifyContent:'center'}} onClick={() => { setMobileOpen(false); setShowAuth(true); }}>Sign in / Sign up</button>
+                ? <button className="btn btn-outline" style={{ width: '100%', justifyContent: 'center' }} onClick={logout}>Sign out</button>
+                : <button className="btn btn-outline" style={{ width: '100%', justifyContent: 'center' }} onClick={() => { setMobileOpen(false); setShowAuth(true); }}>Sign in / Sign up</button>
               }
-              <Link to="/youtube-video-downloader" className="btn btn-primary" style={{width:'100%', justifyContent:'center'}}>
+              <Link to="/youtube-video-downloader" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
                 ⚡ Start downloading
               </Link>
             </div>

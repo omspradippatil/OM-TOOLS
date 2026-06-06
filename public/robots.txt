@@ -3,5 +3,6 @@ Allow: /
 
 Disallow: /api/
 Disallow: /admin/
+Disallow: /.netlify/
 
 Sitemap: https://om-tools.netlify.app/sitemap.xml

@@ -20,10 +20,11 @@
 
 ## Core Philosophy
 
-- **Media-only platform** — Only media downloader tools (YouTube, Instagram, Shorts, Reels, Thumbnails, MP3).
-- **PDF/Image tools are NOT part of this project.** They belong to OM PDF (https://om-pdf.netlify.app).
-- PDF/Image are promoted in the footer under **"More by OM Patil"** with an OM PDF card linking to om-pdf.netlify.app.
+- **Media + Image platform** — YouTube, Instagram, TikTok, Twitter, Facebook, Reddit, Pinterest downloaders PLUS browser-native image tools (compress, resize, convert, crop).
+- **PDF tools are NOT part of this project.** They belong to OM PDF (https://om-pdf.netlify.app).
+- PDF is promoted in the footer under **"More by OM Patil"** with an OM PDF card linking to om-pdf.netlify.app.
 - Design inspired by OM PDF's premium aesthetic: dark theme, glassmorphism, animated blobs, gradient text.
+- Image tools use **teal/emerald accent** (#14B8A6) distinct from the purple video/audio tools.
 - **No backend yet** — Tool pages show a demo result card. Real downloads require a backend API (yt-dlp or similar).
 
 ---
@@ -171,10 +172,15 @@ OM-TOOLS/
 | `/ringtone-maker`  | `RingtoneMaker`  | ffmpeg.wasm, afade + trim |
 | `/audio-normalizer`| `AudioNormalizer`| ffmpeg.wasm, loudnorm filter |
 | `/voice-recorder`  | `VoiceRecorder`  | Browser MediaRecorder API, no ffmpeg |
+| `/image-compressor`  | `ImageCompressor` | Browser Canvas API |
+| `/image-resizer`     | `ImageResizer`    | Browser Canvas API |
+| `/image-converter`   | `ImageConverter`  | Browser Canvas API |
+| `/image-cropper`     | `ImageCropper`    | Browser Canvas API |
+| `/bulk-image-resizer`| `BulkImageResizer`| Browser Canvas API + JSZip |
 | `*` | `NotFound` | 404 page |
 
 
-**❌ DO NOT add PDF or Image tool routes.** Those belong to om-pdf.netlify.app.
+**❌ DO NOT add PDF tool routes.** Those belong to om-pdf.netlify.app.
 
 ---
 
@@ -365,11 +371,20 @@ VITE_FIREBASE_MEASUREMENT_ID
 - [x] **`buildDefaultFormats()` in `ToolPage.jsx`**: Format lists for tiktok, twitter, facebook, reddit, pinterest
 - [x] Verified production build compiles cleanly (`✓ built in 2.86s`).
 
+### Session 13 — SEO, Sitemap, and UI Dashboard Integration
+- [x] **Updated `public/sitemap.xml`**: Added all 36 active routes (Home + 7 Media tools + 5 Social media tools + 18 Audio/Video editors + 5 Image tools) with priority and frequency parameters.
+- [x] **Updated `public/robots.txt`**: Added `/.netlify/` disallow path and correct sitemap URL reference.
+- [x] **Cleaned up `src/constants/seoData.js`**: Removed unused PDF metadata definitions and duplicate `image-compressor` key.
+- [x] **Integrated UI Dashboard ([Home.jsx](file:///C:/Users/OM/Desktop/Projects/OM-TOOLS/src/pages/Home.jsx), [Home.css](file:///C:/Users/OM/Desktop/Projects/OM-TOOLS/src/pages/Home.css))**: Fixed rendering of missing categories (`social` and `image`). Added custom premium teal accents (`#14B8A6`) for all Image Tools.
+- [x] **Expanded Megamenu ([Navbar.jsx](file:///C:/Users/OM/Desktop/Projects/OM-TOOLS/src/components/Navbar.jsx), [Navbar.css](file:///C:/Users/OM/Desktop/Projects/OM-TOOLS/src/components/Navbar.css))**: Restructured dropdown into 4 grid columns. Added a compact accordion menu for mobile screens.
+- [x] **Added Scroll Restoration ([ScrollToTop.jsx](file:///C:/Users/OM/Desktop/Projects/OM-TOOLS/src/components/ScrollToTop.jsx))**: Created a utility component that resets window scroll position to top on pathname changes. Mounted in [App.jsx](file:///C:/Users/OM/Desktop/Projects/OM-TOOLS/src/App.jsx).
+- [x] **Updated `AI_MEMORY.md`**: Updated routes table, removed obsolete constraints, and updated the session log.
+
 ----
 
 ## ⚠️ Constraints (Never Change)
 
-- **Never add PDF or Image tool pages/routes.** Direct users to om-pdf.netlify.app for those.
+- **Never add PDF tool pages/routes.** Direct users to om-pdf.netlify.app for those.
 - Never commit `.env` — it contains Firebase secrets.
 - The footer must always have the OM PDF card in "More by OM Patil".
 - Platform detection (`detectPlatform()`) is the source of truth for URL routing.
