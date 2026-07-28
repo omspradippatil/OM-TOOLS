@@ -13,7 +13,7 @@ const FOOTER_LINKS = {
   'Company': [
     { label: 'About OM Tools', to: '/about' },
     { label: 'GitHub ↗',       to: 'https://github.com/omspradippatil/OM-TOOLS', external: true },
-    { label: 'Portfolio ↗',    to: 'https://ompradippatil.netlify.app/', external: true },
+    { label: 'Portfolio ↗',    to: 'https://om-patil.com', external: true },
   ],
 };
 
@@ -70,7 +70,7 @@ export default function Footer() {
           <div className="footer__col">
             <h3 className="footer__col-heading">More by OM Patil</h3>
             <a
-              href="https://om-pdf.netlify.app"
+              href="https://om-pdf.pages.dev"
               target="_blank"
               rel="noopener noreferrer"
               className="footer__om-pdf-card"
@@ -100,7 +100,7 @@ export default function Footer() {
             </p>
           </div>
           <a
-            href="https://ompradippatil.netlify.app/donate/"
+            href="https://om-patil.com/donate"
             target="_blank"
             rel="noopener noreferrer"
             className="footer__support-btn"
