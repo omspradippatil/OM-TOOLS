@@ -1,3 +1,4 @@
+const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { create: createYoutubeDl } = require('youtube-dl-exec');
@@ -7,11 +8,17 @@ let binaryPath;
 
 if (platform === 'win32') {
   binaryPath = path.join(__dirname, '../../node_modules/youtube-dl-exec/bin/yt-dlp.exe');
+} else if (platform === 'darwin') {
+  const localMacBin = path.join(__dirname, '../../node_modules/youtube-dl-exec/bin/yt-dlp');
+  binaryPath = fs.existsSync(localMacBin) ? localMacBin : 'yt-dlp';
 } else {
-  binaryPath = path.join(__dirname, '../bin/yt-dlp_linux');
+  // Linux (Netlify Lambda)
+  const linuxBin = path.join(__dirname, '../bin/yt-dlp_linux');
+  const nodeBin = path.join(__dirname, '../../node_modules/youtube-dl-exec/bin/yt-dlp');
+  binaryPath = fs.existsSync(linuxBin) ? linuxBin : nodeBin;
 }
 
-const youtubedl = createYoutubeDl(binaryPath);
+const youtubedl = binaryPath ? createYoutubeDl(binaryPath) : createYoutubeDl();
 
 /**
  * Try to get video info using a specific player client strategy.

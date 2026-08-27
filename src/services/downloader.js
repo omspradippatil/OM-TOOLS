@@ -15,14 +15,13 @@
  */
 
 const FALLBACK_INSTANCES = [
-  'https://cobalt.api.timelessnesses.me',
-  'https://cobalt.drgns.space',
-  'https://cobalt.catto.space',
-  'https://co.wuk.sh',
-  'https://cobalt.darwi.dev',
   'https://cobaltapi.cjs.nz',
-  'https://api.cobalt.tools',
-  'https://cobalt.api.minnick.me',
+  'https://cobalt.kaita.dev',
+  'https://dl.khub.win',
+  'https://cobalt.canine.tools',
+  'https://cobalt.xy24.pw',
+  'https://cobalt.clxxiii.dev',
+  'https://cobalt.tools',
 ];
 
 // State caching for Cobalt instances to maximize start speed and prevent timeout delays
@@ -194,7 +193,7 @@ async function verifyStream(downloadUrl, userSignal) {
 async function tryCobaltInstance(instanceUrl, url, options) {
   const body = {
     url,
-    downloadMode: options.mode === 'audio' ? 'audio' : 'video',
+    downloadMode: options.mode === 'audio' ? 'audio' : 'auto',
   };
 
   if (body.downloadMode === 'audio') {
@@ -717,12 +716,20 @@ export function mimeForExt(ext) {
   const map = {
     mp4:  'video/mp4',
     webm: 'video/webm',
+    mkv:  'video/x-matroska',
+    avi:  'video/x-msvideo',
+    mov:  'video/quicktime',
     mp3:  'audio/mpeg',
     m4a:  'audio/mp4',
     ogg:  'audio/ogg',
     wav:  'audio/wav',
+    flac: 'audio/flac',
     jpg:  'image/jpeg',
+    jpeg: 'image/jpeg',
     png:  'image/png',
+    webp: 'image/webp',
+    gif:  'image/gif',
+    zip:  'application/zip',
   };
   return map[ext?.toLowerCase()] || 'application/octet-stream';
 }

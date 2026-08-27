@@ -132,37 +132,98 @@ exports.handler = async (event) => {
 
     // Extract playlist metadata
     const metadata = findKey(data, 'playlistMetadataRenderer');
-    const playlistTitle = metadata?.title || 'YouTube Playlist';
+    const headerTitle = data.header?.playlistHeaderRenderer?.title?.simpleText ||
+                        data.header?.playlistHeaderRenderer?.title?.runs?.[0]?.text;
+    const playlistTitle = metadata?.title || headerTitle || 'YouTube Playlist';
 
-    // Extract playlist videos
-    const listRenderer = findKey(data, 'playlistVideoListRenderer');
-    if (!listRenderer || !listRenderer.contents) {
-      throw new Error('This playlist is empty or private.');
+    // Extract playlist videos supporting both legacy playlistVideoRenderer and modern lockupViewModel
+    const videos = [];
+    const seenIds = new Set();
+
+    function scanForVideos(obj) {
+      if (!obj || typeof obj !== 'object') return;
+
+      // Legacy format: playlistVideoRenderer
+      if (obj.playlistVideoRenderer && obj.playlistVideoRenderer.videoId) {
+        const r = obj.playlistVideoRenderer;
+        const videoId = r.videoId;
+        if (!seenIds.has(videoId)) {
+          seenIds.add(videoId);
+          const title = r.title?.runs?.[0]?.text || r.title?.simpleText || 'Untitled Video';
+          const thumbnails = r.thumbnail?.thumbnails || [];
+          const thumbnail = thumbnails.length > 0 ? thumbnails[thumbnails.length - 1].url : `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+          const duration = r.lengthText?.simpleText || '00:00';
+          const channel = r.shortBylineText?.runs?.[0]?.text || 'Unknown';
+
+          videos.push({
+            id: videoId,
+            title,
+            thumbnail,
+            duration,
+            channel,
+            url: `https://www.youtube.com/watch?v=${videoId}`
+          });
+        }
+      }
+
+      // Modern format: lockupViewModel
+      if (obj.lockupViewModel && obj.lockupViewModel.contentId) {
+        const m = obj.lockupViewModel;
+        const videoId = m.contentId;
+        if (!seenIds.has(videoId)) {
+          seenIds.add(videoId);
+          const title = m.metadata?.lockupMetadataViewModel?.title?.content || 'Untitled Video';
+          const imgSources = m.contentImage?.thumbnailViewModel?.image?.sources || [];
+          const thumbnail = imgSources.length > 0 ? imgSources[imgSources.length - 1].url : `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+
+          let channel = 'Unknown';
+          const rows = m.metadata?.lockupMetadataViewModel?.metadata?.contentMetadataViewModel?.metadataRows || [];
+          for (const row of rows) {
+            const parts = row.metadataParts || [];
+            for (const p of parts) {
+              if (p.text?.content) {
+                channel = p.text.content;
+                break;
+              }
+            }
+            if (channel !== 'Unknown') break;
+          }
+
+          let duration = '00:00';
+          const overlays = m.contentImage?.thumbnailViewModel?.overlays || [];
+          for (const ov of overlays) {
+            if (ov.thumbnailOverlayBadgeViewModel?.badge?.thumbnailBadgeViewModel?.text) {
+              duration = ov.thumbnailOverlayBadgeViewModel.badge.thumbnailBadgeViewModel.text;
+              break;
+            }
+            if (ov.thumbnailOverlayTimeStatusRenderer?.text?.simpleText) {
+              duration = ov.thumbnailOverlayTimeStatusRenderer.text.simpleText;
+              break;
+            }
+          }
+
+          videos.push({
+            id: videoId,
+            title,
+            thumbnail,
+            duration,
+            channel,
+            url: `https://www.youtube.com/watch?v=${videoId}`
+          });
+        }
+      }
+
+      if (Array.isArray(obj)) {
+        for (const item of obj) scanForVideos(item);
+      } else {
+        for (const k of Object.keys(obj)) scanForVideos(obj[k]);
+      }
     }
 
-    const videos = [];
-    for (const item of listRenderer.contents) {
-      const renderer = item.playlistVideoRenderer;
-      if (renderer && renderer.videoId) {
-        const videoId = renderer.videoId;
-        const title = renderer.title?.runs?.[0]?.text || renderer.title?.simpleText || 'Untitled Video';
-        
-        // Get highest resolution thumbnail
-        const thumbnails = renderer.thumbnail?.thumbnails || [];
-        const thumbnail = thumbnails.length > 0 ? thumbnails[thumbnails.length - 1].url : `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-        
-        const duration = renderer.lengthText?.simpleText || '00:00';
-        const channel = renderer.shortBylineText?.runs?.[0]?.text || 'Unknown';
+    scanForVideos(data);
 
-        videos.push({
-          id: videoId,
-          title,
-          thumbnail,
-          duration,
-          channel,
-          url: `https://www.youtube.com/watch?v=${videoId}`
-        });
-      }
+    if (videos.length === 0) {
+      throw new Error('This playlist is empty, private, or could not be loaded.');
     }
 
     return {

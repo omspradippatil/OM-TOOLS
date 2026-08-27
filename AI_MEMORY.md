@@ -371,16 +371,16 @@ VITE_FIREBASE_MEASUREMENT_ID
 - [x] **`buildDefaultFormats()` in `ToolPage.jsx`**: Format lists for tiktok, twitter, facebook, reddit, pinterest
 - [x] Verified production build compiles cleanly (`✓ built in 2.86s`).
 
-### Session 13 — SEO, Sitemap, and UI Dashboard Integration
-- [x] **Updated `public/sitemap.xml`**: Added all 36 active routes (Home + 7 Media tools + 5 Social media tools + 18 Audio/Video editors + 5 Image tools) with priority and frequency parameters.
-- [x] **Updated `public/robots.txt`**: Added `/.netlify/` disallow path and correct sitemap URL reference.
-- [x] **Cleaned up `src/constants/seoData.js`**: Removed unused PDF metadata definitions and duplicate `image-compressor` key.
-- [x] **Integrated UI Dashboard ([Home.jsx](file:///C:/Users/OM/Desktop/Projects/OM-TOOLS/src/pages/Home.jsx), [Home.css](file:///C:/Users/OM/Desktop/Projects/OM-TOOLS/src/pages/Home.css))**: Fixed rendering of missing categories (`social` and `image`). Added custom premium teal accents (`#14B8A6`) for all Image Tools.
-- [x] **Expanded Megamenu ([Navbar.jsx](file:///C:/Users/OM/Desktop/Projects/OM-TOOLS/src/components/Navbar.jsx), [Navbar.css](file:///C:/Users/OM/Desktop/Projects/OM-TOOLS/src/components/Navbar.css))**: Restructured dropdown into 4 grid columns. Added a compact accordion menu for mobile screens.
-- [x] **Added Scroll Restoration ([ScrollToTop.jsx](file:///C:/Users/OM/Desktop/Projects/OM-TOOLS/src/components/ScrollToTop.jsx))**: Created a utility component that resets window scroll position to top on pathname changes. Mounted in [App.jsx](file:///C:/Users/OM/Desktop/Projects/OM-TOOLS/src/App.jsx).
-- [x] **Updated `AI_MEMORY.md`**: Updated routes table, removed obsolete constraints, and updated the session log.
+### Session 14 — Live Tool Diagnostics & Reliability Hardening
+- [x] **Diagnosed & Fixed YouTube Playlist Parsing (`netlify/functions/playlist.cjs`)**: Adapted the recursive parser to support YouTube's modern `lockupViewModel` structure (as well as legacy `playlistVideoRenderer`), extracting full playlist titles, video IDs, duration, authors, and thumbnails across all 100+ videos.
+- [x] **Fixed Cobalt API Payload Schema (`src/services/downloader.js`)**: Corrected `downloadMode` to `'auto'` (or `'audio'`), eliminating the `error.api.invalid_body` 400 rejection from modern Cobalt v10/v11 instances.
+- [x] **Refreshed Cobalt Fallback Pool (`src/services/downloader.js`)**: Replaced offline/defunct domains with fresh active server instances.
+- [x] **Cross-Platform yt-dlp Path Resolution (`netlify/functions/download.cjs`)**: Added proper Darwin/macOS and Linux binary fallbacks to prevent `ENOEXEC` errors on macOS development setups.
+- [x] **Cleaned JSZip Integration (`BulkImageResizer.jsx`)**: Unified JSZip static imports to resolve dynamic import bundling warnings.
+- [x] **Added Missing MIME Mappings (`src/services/downloader.js`)**: Added `webp`, `gif`, `mkv`, `avi`, `mov`, and `zip` to `mimeForExt`.
+- [x] **Verified All Diagnostics & Build**: Executed full automated test suite (18/18 tests passing) and confirmed production build compiles cleanly (`✓ built in 911ms`).
 
-----
+---
 
 ## ⚠️ Constraints (Never Change)
 

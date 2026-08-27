@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import JSZip from 'jszip';
 import SEO from '../components/SEO.jsx';
 import { SEO_DATA } from '../constants/seoData.js';
 import { loadImage, canvasToBlob, formatBytes } from '../components/ImageToolPage.jsx';
@@ -131,7 +132,6 @@ export default function BulkImageResizer() {
   };
 
   const downloadAll = async () => {
-    const JSZip = (await import('jszip')).default;
     const zip = new JSZip();
     const ext = { jpg: 'jpg', png: 'png', webp: 'webp' }[fmt] || 'jpg';
 
